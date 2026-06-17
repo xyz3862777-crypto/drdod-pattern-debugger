@@ -1300,10 +1300,12 @@
 
     function renderMapping() {
       const p = panel();
+      const sourceMap = DISPLAY_SOURCE_MAP[p.id];
       const rows = p.phases.map((phase, rowIndex) => {
         const cells = [0, 1, 2, 3, 4, 5].map((opIndex) => {
-          const color = colorAt(phase, opIndex);
-          return `<td class="cell-pix ${classForColor(color)}">${color}</td>`;
+          const label = sourceMap ? sourceMap[rowIndex][opIndex] : colorAt(phase, opIndex);
+          const color = label[0] || colorAt(phase, opIndex);
+          return `<td class="cell-pix ${classForColor(color)}">${label}</td>`;
         }).join("");
         const cls = rowIndex === state.phase ? "phase-now" : "";
         return `<tr class="${cls}"><td class="row-head">G${rowIndex + 1}</td>${cells}</tr>`;
