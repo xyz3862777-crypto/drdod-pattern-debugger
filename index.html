@@ -536,6 +536,25 @@
       background: #05070b;
     }
 
+    .pixel-cell.dplc-label {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .pixel-cell.dplc-duplicate {
+      z-index: 0;
+    }
+
+    .pixel-cell.dplc-duplicate::before {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border: 2px solid #fff7a8;
+      border-radius: 999px;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+      pointer-events: none;
+    }
+
     .pixel-cell:nth-child(7),
     .pixel-cell:nth-child(13) {
       border-right-color: rgba(16, 48, 64, 0.48);
@@ -736,7 +755,7 @@
         <div class="charging-note">
           <div class="note-box"><strong>Black cell</strong><span>Input is 0 or not part of this target pattern.</span></div>
           <div class="note-box"><strong>Dim cell</strong><span>OD OFF and 0-&gt;1 charging may not reach target voltage.</span></div>
-          <div class="note-box"><strong>OD mark</strong><span>OD ON, exact match, and rising edge; DRDOD is compensating.</span></div>
+          <div class="note-box"><strong>DPLC / OD</strong><span>Yellow circle marks duplicated subpix in DPLC; OD remains disabled.</span></div>
         </div>
       </section>
 
@@ -1341,6 +1360,7 @@
           const sourceLabel = dplcSourceLabel(displayLabel);
           const pix = displayLabel[0];
           const sourcePix = sourceLabel[0];
+          const isDuplicate = state.dplcMode && sourceLabel !== displayLabel;
           const driver = resolveDisplayDriver(p, topPhase, bottomPhase, sourceLabel);
           const status = driver ? phaseOpStatus(p, driver.phase, driver.op) : null;
           const active = state.dplcMode ? visualColors.includes(sourcePix) : visualColors.includes(pix);
@@ -1348,6 +1368,8 @@
           const odOn = withOd && status ? status.finalOd === 1 : false;
           const exact = status ? status.exact : false;
           const classes = ["pixel-cell"];
+          if (state.dplcMode) classes.push("dplc-label");
+          if (isDuplicate) classes.push("dplc-duplicate");
           if (active) classes.push(`drive-${pix.toLowerCase()}`);
           if (active && isRising && !odOn) classes.push("undercharged");
           if (odOn) classes.push("od-fixed");
@@ -1355,7 +1377,7 @@
           const title = driver
             ? `${label} ${displayLabel}${state.dplcMode ? ` <= ${sourceLabel}` : ""}: ${driver.side} L${driver.phase + 1} OP${driver.op + 1}`
             : `${label} ${displayLabel}${state.dplcMode ? ` <= ${sourceLabel}` : ""}: no source`;
-          return `<div class="${classes.join(" ")}" title="${title}">${pix}</div>`;
+          return `<div class="${classes.join(" ")}" title="${title}">${state.dplcMode ? displayLabel : pix}</div>`;
         }).join("");
         const nowClass = activePair ? " phase-now-visual" : "";
         return `
