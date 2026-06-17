@@ -536,7 +536,7 @@
       background: #05070b;
     }
 
-    .pixel-cell.dplc-label {
+    .pixel-cell.pixel-label {
       font-size: 18px;
       font-weight: 800;
     }
@@ -1368,7 +1368,7 @@
           const odOn = withOd && status ? status.finalOd === 1 : false;
           const exact = status ? status.exact : false;
           const classes = ["pixel-cell"];
-          if (state.dplcMode) classes.push("dplc-label");
+          classes.push("pixel-label");
           if (isDuplicate) classes.push("dplc-duplicate");
           if (active) classes.push(`drive-${pix.toLowerCase()}`);
           if (active && isRising && !odOn) classes.push("undercharged");
@@ -1377,7 +1377,7 @@
           const title = driver
             ? `${label} ${displayLabel}${state.dplcMode ? ` <= ${sourceLabel}` : ""}: ${driver.side} L${driver.phase + 1} OP${driver.op + 1}`
             : `${label} ${displayLabel}${state.dplcMode ? ` <= ${sourceLabel}` : ""}: no source`;
-          return `<div class="${classes.join(" ")}" title="${title}">${state.dplcMode ? displayLabel : pix}</div>`;
+          return `<div class="${classes.join(" ")}" title="${title}">${displayLabel}</div>`;
         }).join("");
         const nowClass = activePair ? " phase-now-visual" : "";
         return `
