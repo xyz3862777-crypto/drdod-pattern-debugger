@@ -1,0 +1,1472 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DRDOD Pattern Detect Debugger</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #697386;
+      --line: #d9deea;
+      --line-strong: #9aa6bd;
+      --ok: #168455;
+      --warn: #9b6a00;
+      --bad: #bf2d42;
+      --off: #eef1f6;
+      --r: #ff777b;
+      --g: #62ea70;
+      --b: #7375ee;
+      --y: #f7ef63;
+      --c: #63e3e4;
+      --m: #f062dd;
+      --k: #c8ceda;
+      --w: #ffffff;
+      --focus: #2b64d8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+    }
+
+    aside {
+      background: #eef2f8;
+      border-right: 1px solid var(--line);
+      padding: 20px;
+      overflow: auto;
+    }
+
+    main {
+      padding: 22px;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin: 0 0 18px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .control-group {
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+      margin-top: 16px;
+    }
+
+    label {
+      display: block;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    select,
+    input[type="text"] {
+      width: 100%;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .field { margin-bottom: 13px; }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .phase-tools {
+      display: grid;
+      grid-template-columns: 1fr 94px;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .segmented button,
+    .quick button,
+    .op-toggle,
+    .play-button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 6px;
+      min-height: 34px;
+      cursor: pointer;
+    }
+
+    .segmented button.active,
+    .quick button.active,
+    .op-toggle.on,
+    .play-button.active {
+      border-color: var(--focus);
+      background: #eaf0ff;
+      color: #123f9f;
+      font-weight: 700;
+    }
+
+    .play-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .quick {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .op-inputs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .op-toggle {
+      display: grid;
+      place-items: center;
+      height: 38px;
+    }
+
+    .op-toggle.off {
+      background: var(--off);
+      color: #738095;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--line-strong);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 74px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.2;
+      margin-top: 6px;
+      word-break: break-word;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric.ok { border-left-color: var(--ok); }
+    .metric.bad { border-left-color: var(--bad); }
+    .metric.warn { border-left-color: var(--warn); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      text-align: center;
+      vertical-align: middle;
+      height: 34px;
+    }
+
+    th {
+      background: #f0f3f9;
+      font-weight: 700;
+    }
+
+    .row-head {
+      background: #f8fafc;
+      font-weight: 700;
+      width: 52px;
+    }
+
+    .cell-pix {
+      color: #111827;
+      font-weight: 800;
+      border-color: #b7bfcc;
+    }
+
+    .pix-r { background: var(--r); }
+    .pix-g { background: var(--g); }
+    .pix-b { background: var(--b); color: #fff; }
+    .pix-y { background: var(--y); }
+    .pix-c { background: var(--c); }
+    .pix-m { background: var(--m); }
+    .pix-w { background: var(--w); }
+    .pix-k { background: var(--k); }
+
+    .phase-now td,
+    .phase-now .row-head {
+      outline: 2px solid #2b64d8;
+      outline-offset: -2px;
+    }
+
+    .bit {
+      display: inline-grid;
+      place-items: center;
+      min-width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-weight: 800;
+    }
+
+    .bit.one { background: #def7e9; border-color: #72c79b; color: #075333; }
+    .bit.zero { background: #f3f5f9; color: #667085; }
+    .bit.rise { background: #fff1be; border-color: #d8a824; color: #614200; }
+    .bit.od { background: #c8f0ff; border-color: #3ba7ce; color: #034358; }
+    .bit.ng { background: #ffe2e6; border-color: #ee8b98; color: #8d1225; }
+
+    .detail-table td {
+      height: 38px;
+    }
+
+    .decision {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      height: 26px;
+      border-radius: 6px;
+      font-weight: 800;
+    }
+
+    .decision.pass {
+      background: #dcf6e8;
+      color: #0b5d3d;
+    }
+
+    .decision.fail {
+      background: #ffe0e5;
+      color: #8d1225;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 16px;
+      border: 1px solid #aeb7c8;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 10px 0 0;
+    }
+
+    .mono {
+      font-family: Consolas, "Courier New", monospace;
+      letter-spacing: 0;
+    }
+
+    .batch-wrap {
+      max-height: 360px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .batch-wrap table {
+      border: 0;
+    }
+
+    .batch-wrap th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .charging-section {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .charging-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .charging-head h2 {
+      margin: 0;
+    }
+
+    .charging-mode {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .charging-pane {
+      padding: 14px 16px 16px;
+      min-width: 0;
+    }
+
+    .pane-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+
+    .pane-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    #chargingTitle {
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .od-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      user-select: none;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .od-toggle input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      border-radius: 999px;
+      background: #aeb7c8;
+      transition: background 160ms ease;
+    }
+
+    .switch-track::after {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+      transition: transform 160ms ease;
+    }
+
+    .od-toggle input:checked + .switch-track {
+      background: var(--focus);
+    }
+
+    .od-toggle input:checked + .switch-track::after {
+      transform: translateX(22px);
+    }
+
+    .charging-panel {
+      background: #59e3e8;
+      border: 3px solid #3e8eb0;
+      padding: 8px;
+      overflow-x: auto;
+    }
+
+    .charging-body {
+      display: grid;
+      grid-template-columns: minmax(560px, 1fr) minmax(280px, 0.46fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .display-line {
+      margin-bottom: 6px;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .display-line:last-child {
+      margin-bottom: 0;
+    }
+
+    .pixel-row {
+      display: flex;
+      min-width: max-content;
+      align-items: stretch;
+    }
+
+    .pixel-row:last-child {
+      border-bottom: 0;
+    }
+
+    .display-line.phase-now-visual,
+    .pixel-row.phase-now-visual {
+      outline: 3px solid rgba(43, 100, 216, 0.9);
+      outline-offset: -3px;
+    }
+
+    .line-label {
+      display: flex;
+      align-items: center;
+      flex: 0 0 74px;
+      color: #07131c;
+      font-weight: 800;
+      font-size: 18px;
+      padding-left: 4px;
+      background: rgba(255, 255, 255, 0.72);
+      border-right: 1px solid rgba(16, 48, 64, 0.34);
+    }
+
+    .pixel-cell {
+      position: relative;
+      display: grid;
+      place-items: center;
+      flex: 0 0 36px;
+      height: 38px;
+      color: #fff;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 500;
+      background: #05070b;
+    }
+
+    .pixel-cell:nth-child(7),
+    .pixel-cell:nth-child(13) {
+      border-right-color: rgba(16, 48, 64, 0.48);
+    }
+
+    .pixel-cell.drive-g { background: #08b95e; color: #fff; }
+    .pixel-cell.drive-b { background: #0700fa; color: #fff; }
+    .pixel-cell.drive-r { background: #fa5b61; color: #fff; }
+
+    .pixel-cell.undercharged {
+      filter: brightness(0.5) saturate(0.95);
+    }
+
+    .pixel-cell.undercharged::after {
+      content: none;
+    }
+
+    .pixel-cell.od-fixed {
+      box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.68), inset 0 -3px 0 rgba(0, 0, 0, 0.14);
+    }
+
+    .pixel-cell.od-fixed::after {
+      content: "OD";
+      position: absolute;
+      right: 2px;
+      top: 2px;
+      padding: 1px 3px;
+      border-radius: 3px;
+      background: #fff7a8;
+      color: #1f2937;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .pixel-cell.blocked {
+      opacity: 0.42;
+      filter: grayscale(0.55);
+    }
+
+    .charging-note {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 0 16px 16px;
+    }
+
+    .note-box {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 10px;
+      background: #fbfcff;
+      min-height: 58px;
+    }
+
+    .note-box strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .note-box span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .panel-reference-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .panel-reference-frame {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px;
+      height: 210px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .panel-reference-frame img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--line); }
+      .layout { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .charging-body { grid-template-columns: 1fr; }
+      .panel-reference-frame { height: 300px; }
+      .charging-note { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      main, aside { padding: 14px; }
+      .summary { grid-template-columns: 1fr; }
+      .section { padding: 12px; }
+      th, td { padding: 6px 4px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <h1>Pattern Detect Debugger</h1>
+      <p class="sub">Panel mapping, exact match, 0-&gt;1 rising, final DRDOD enable.</p>
+
+      <div class="control-group">
+        <div class="field">
+          <label for="panelSelect">Panel 架構</label>
+          <select id="panelSelect"></select>
+        </div>
+
+        <div class="field">
+          <label>Line phase</label>
+          <div class="phase-tools">
+            <div class="segmented" id="phaseButtons"></div>
+            <button type="button" class="play-button" id="playButton">Play</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="targetSelect">TCON Target Pattern</label>
+          <select id="targetSelect"></select>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="field">
+          <label>Input Pattern Preset</label>
+          <div class="quick" id="presetButtons"></div>
+        </div>
+
+        <div class="field">
+          <label>Actual input nonzero mask</label>
+          <div class="op-inputs" id="opInputs"></div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3>Verilog 對應</h3>
+        <p class="hint mono">L0 = OP1, OP3, OP5<br>L1 = OP2, OP4, OP6<br>final OD = exact_match ? now &amp; ~prev : 0</p>
+      </div>
+    </aside>
+
+    <main>
+      <div class="summary" id="summary"></div>
+
+      <section class="section charging-section">
+        <div class="charging-head">
+          <h2>Charging View</h2>
+          <div class="charging-mode" id="chargingMode"></div>
+        </div>
+        <div class="charging-pane">
+          <div class="pane-title">
+            <span id="chargingTitle">No OD</span>
+            <label class="od-toggle">
+              <input type="checkbox" id="odToggle">
+              <span class="switch-track" aria-hidden="true"></span>
+              <span id="odToggleText">OD OFF</span>
+            </label>
+          </div>
+          <div class="charging-body">
+            <div class="charging-panel" id="chargingPanel"></div>
+            <div class="panel-reference">
+              <div class="panel-reference-head">
+                <span>Panel Reference</span>
+                <span id="panelReferenceName"></span>
+              </div>
+              <div class="panel-reference-frame">
+                <img id="panelReferenceImage" alt="Panel reference">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="charging-note">
+          <div class="note-box"><strong>Black cell</strong><span>Input is 0 or not part of this target pattern.</span></div>
+          <div class="note-box"><strong>Dim cell</strong><span>OD OFF and 0-&gt;1 charging may not reach target voltage.</span></div>
+          <div class="note-box"><strong>OD mark</strong><span>OD ON, exact match, and rising edge; DRDOD is compensating.</span></div>
+        </div>
+      </section>
+
+      <div class="layout">
+        <section class="section">
+          <h2>Panel Mapping</h2>
+          <div id="mappingTable"></div>
+          <div class="legend">
+            <span class="legend-item"><span class="swatch pix-r"></span>R</span>
+            <span class="legend-item"><span class="swatch pix-g"></span>G</span>
+            <span class="legend-item"><span class="swatch pix-b"></span>B</span>
+            <span class="legend-item"><span class="swatch pix-y"></span>Y=R+G</span>
+            <span class="legend-item"><span class="swatch pix-c"></span>C=G+B</span>
+            <span class="legend-item"><span class="swatch pix-m"></span>M=R+B</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Detect Result</h2>
+          <div id="detailTable"></div>
+        </section>
+      </div>
+
+      <section class="section">
+        <h2>Batch Coverage</h2>
+        <div class="batch-wrap" id="batchTable"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const PANELS = [
+      { id: 1, name: "HKC1", phases: [
+        { R: "011011", G: "000000", B: "100100" },
+        { R: "000000", G: "011011", B: "100100" },
+        { R: "110110", G: "000000", B: "001001" },
+        { R: "000000", G: "101101", B: "010010" }
+      ]},
+      { id: 2, name: "HKC2", phases: [
+        { R: "110110", G: "001001", B: "000000" },
+        { R: "000000", G: "010010", B: "101101" },
+        { R: "011011", G: "100100", B: "000000" },
+        { R: "000000", G: "001001", B: "110110" }
+      ]},
+      { id: 3, name: "HKC3", phases: [
+        { R: "001001", G: "000000", B: "110110" },
+        { R: "010010", G: "101101", B: "000000" },
+        { R: "010010", G: "000000", B: "101101" },
+        { R: "100100", G: "011011", B: "000000" }
+      ]},
+      { id: 4, name: "HKC4", phases: [
+        { R: "011011", G: "000000", B: "100100" },
+        { R: "000000", G: "101101", B: "010010" },
+        { R: "110110", G: "000000", B: "001001" },
+        { R: "000000", G: "011011", B: "100100" }
+      ]},
+      { id: 5, name: "HKC5", phases: [
+        { R: "110110", G: "000000", B: "001001" },
+        { R: "000000", G: "011011", B: "100100" },
+        { R: "011011", G: "000000", B: "100100" },
+        { R: "000000", G: "101101", B: "010010" }
+      ]},
+      { id: 6, name: "HKC6", phases: [
+        { R: "011011", G: "000000", B: "100100" },
+        { R: "000000", G: "101101", B: "010010" },
+        { R: "110110", G: "000000", B: "001001" },
+        { R: "000000", G: "011011", B: "100100" }
+      ]},
+      { id: 7, name: "HKC7", phases: [
+        { R: "011011", G: "000000", B: "100100" },
+        { R: "000000", G: "011011", B: "100100" },
+        { R: "110110", G: "000000", B: "001001" },
+        { R: "000000", G: "101101", B: "010010" }
+      ]},
+      { id: 8, name: "HKC8", phases: [
+        { R: "010010", G: "101101", B: "000000" },
+        { R: "010010", G: "000000", B: "101101" },
+        { R: "100100", G: "011011", B: "000000" },
+        { R: "001001", G: "000000", B: "110110" }
+      ]},
+      { id: 9, name: "CSOT1", phases: [
+        { R: "001001", G: "000000", B: "110110" },
+        { R: "010010", G: "101101", B: "000000" },
+        { R: "010010", G: "000000", B: "101101" },
+        { R: "100100", G: "011011", B: "000000" }
+      ]},
+      { id: 10, name: "BOE1", phases: [
+        { R: "000000", G: "101101", B: "010010" },
+        { R: "011011", G: "000000", B: "100100" },
+        { R: "000000", G: "011011", B: "100100" },
+        { R: "110110", G: "000000", B: "001001" }
+      ]},
+      { id: 11, name: "BOE2", phases: [
+        { R: "001001", G: "010010", B: "100100" },
+        { R: "001001", G: "010010", B: "100100" },
+        { R: "001001", G: "010010", B: "100100" },
+        { R: "001001", G: "010010", B: "100100" }
+      ]},
+      { id: 12, name: "TIANMA1", phases: [
+        { R: "011011", G: "000000", B: "100100" },
+        { R: "000000", G: "101101", B: "010010" },
+        { R: "110110", G: "000000", B: "001001" },
+        { R: "000000", G: "011011", B: "100100" }
+      ]}
+    ];
+
+    const TARGETS = [
+      { id: "R", label: "R", colors: ["R"] },
+      { id: "G", label: "G", colors: ["G"] },
+      { id: "B", label: "B", colors: ["B"] },
+      { id: "Y", label: "Y (R+G)", colors: ["R", "G"] },
+      { id: "C", label: "C (G+B)", colors: ["G", "B"] },
+      { id: "M", label: "M (R+B)", colors: ["R", "B"] }
+    ];
+
+    const PRESETS = [
+      { id: "FOLLOW", label: "Follow" },
+      { id: "R", label: "R" },
+      { id: "G", label: "G" },
+      { id: "B", label: "B" },
+      { id: "Y", label: "Y" },
+      { id: "C", label: "C" },
+      { id: "M", label: "M" },
+      { id: "W", label: "W" },
+      { id: "K", label: "K" },
+      { id: "CUSTOM", label: "Custom" }
+    ];
+
+    const PANEL_IMAGES = {
+      1: "assets/panels/HKC1.png",
+      2: "assets/panels/HKC2.png",
+      3: "assets/panels/HKC3.png",
+      4: "assets/panels/HKC4.png",
+      5: "assets/panels/HKC5.png",
+      6: "assets/panels/HKC6.png",
+      7: "assets/panels/HKC7.png",
+      8: "assets/panels/HKC8.png",
+      9: "assets/panels/CSOT1.png",
+      10: "assets/panels/BOE1.png",
+      11: "assets/panels/BOE2.png",
+      12: "assets/panels/TIANMA1.png"
+    };
+
+    const COMBO_COLORS = {
+      R: ["R"],
+      G: ["G"],
+      B: ["B"],
+      Y: ["R", "G"],
+      C: ["G", "B"],
+      M: ["R", "B"],
+      W: ["R", "G", "B"],
+      K: []
+    };
+
+    const DISPLAY_SOURCE_MAP = {
+      1: [
+        ["R1", "R2", "B1", "R3", "R4", "B3"],
+        ["G0", "G1", "B2", "G2", "G3", "B4"],
+        ["B0", "R1", "R2", "B2", "R3", "R4"],
+        ["G1", "B1", "G2", "G3", "B3", "G4"]
+      ],
+      2: [
+        ["G0", "R1", "R2", "G2", "R3", "R4"],
+        ["B0", "G1", "B1", "B2", "G3", "B3"],
+        ["R1", "R2", "G2", "R3", "R4", "G4"],
+        ["G1", "B1", "B2", "G3", "B3", "B4"]
+      ],
+      3: [
+        ["R1", "B1", "B2", "R3", "B3", "B4"],
+        ["G1", "R2", "G2", "G3", "R4", "G4"],
+        ["B0", "R1", "B1", "B2", "R3", "B3"],
+        ["G0", "G1", "R2", "G2", "G3", "R4"]
+      ],
+      4: [
+        ["R1", "R2", "B2", "R3", "R4", "B4"],
+        ["G1", "B1", "G2", "G3", "B3", "G4"],
+        ["B0", "R1", "R2", "B2", "R3", "R4"],
+        ["G0", "G1", "B1", "G2", "G3", "B3"]
+      ],
+      5: [
+        ["B0", "R1", "R2", "B2", "R3", "R4"],
+        ["G0", "G1", "B1", "G2", "G3", "B3"],
+        ["R1", "R2", "B2", "R3", "R4", "B4"],
+        ["G1", "B1", "G2", "G3", "B3", "G4"]
+      ],
+      6: [
+        ["R1", "R2", "B2", "R3", "R4", "B4"],
+        ["G1", "B1", "G2", "G3", "B3", "G4"],
+        ["B0", "R1", "R2", "B2", "R3", "R4"],
+        ["G0", "G1", "B1", "G2", "G3", "B3"]
+      ],
+      7: [
+        ["R1", "R2", "B1", "R3", "R4", "B3"],
+        ["G0", "G1", "B2", "G2", "G3", "B4"],
+        ["B0", "R1", "R2", "B2", "R3", "R4"],
+        ["G1", "B1", "G2", "G3", "B3", "G4"]
+      ],
+      8: [
+        ["G1", "R2", "G2", "G3", "R4", "G4"],
+        ["B0", "R1", "B1", "B2", "R3", "B3"],
+        ["G0", "G1", "R2", "G2", "G3", "R4"],
+        ["R1", "B1", "B2", "R3", "B3", "B4"]
+      ],
+      9: [
+        ["R1", "B1", "B2", "R3", "B3", "B4"],
+        ["G1", "R2", "G2", "G3", "R4", "G4"],
+        ["B0", "R1", "B1", "B2", "R3", "B3"],
+        ["G0", "G1", "R2", "G2", "G3", "R4"]
+      ],
+      10: [
+        ["G1", "B1", "G2", "G3", "B3", "G4"],
+        ["R1", "R2", "B2", "R3", "R4", "B4"],
+        ["G0", "G1", "B1", "G2", "G3", "B3"],
+        ["B0", "R1", "R2", "B2", "R3", "R4"]
+      ],
+      11: [
+        ["R", "G", "B", "R", "G", "B"],
+        ["R", "G", "B", "R", "G", "B"],
+        ["R", "G", "B", "R", "G", "B"],
+        ["R", "G", "B", "R", "G", "B"]
+      ],
+      12: [
+        ["R1", "R2", "B2", "R3", "R4", "B4"],
+        ["G1", "B1", "G2", "G3", "B3", "G4"],
+        ["B0", "R1", "R2", "B2", "R3", "R4"],
+        ["G0", "G1", "B1", "G2", "G3", "B3"]
+      ]
+    };
+
+    const state = {
+      panelId: 3,
+      phase: 1,
+      target: "C",
+      preset: "FOLLOW",
+      input: [0, 0, 0, 0, 0, 0],
+      odEnabled: false,
+      playing: false,
+      playTimer: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function bitsToOps(bits) {
+      return bits.split("").reverse().map((b) => b === "1" ? 1 : 0);
+    }
+
+    function opsToBits(ops) {
+      return ops.slice().reverse().map(String).join("");
+    }
+
+    function orOps(a, b) {
+      return a.map((v, i) => v || b[i] ? 1 : 0);
+    }
+
+    function andOps(a, b) {
+      return a.map((v, i) => v && b[i] ? 1 : 0);
+    }
+
+    function notOps(a) {
+      return a.map((v) => v ? 0 : 1);
+    }
+
+    function countOps(a) {
+      return a.reduce((sum, v) => sum + v, 0);
+    }
+
+    function sameOps(a, b) {
+      return a.every((v, i) => v === b[i]);
+    }
+
+    function panel() {
+      return PANELS.find((p) => p.id === state.panelId);
+    }
+
+    function phaseData(p, phase) {
+      return p.phases[phase];
+    }
+
+    function colorAt(phaseInfo, opIndex) {
+      const r = bitsToOps(phaseInfo.R)[opIndex];
+      const g = bitsToOps(phaseInfo.G)[opIndex];
+      const b = bitsToOps(phaseInfo.B)[opIndex];
+      if (r) return "R";
+      if (g) return "G";
+      if (b) return "B";
+      return "-";
+    }
+
+    function expectedFor(panelInfo, phase, colors) {
+      let out = [0, 0, 0, 0, 0, 0];
+      const info = phaseData(panelInfo, phase);
+      colors.forEach((color) => {
+        out = orOps(out, bitsToOps(info[color]));
+      });
+      return out;
+    }
+
+    function targetInfo(id = state.target) {
+      return TARGETS.find((p) => p.id === id);
+    }
+
+    function presetOps(preset) {
+      if (preset === "FOLLOW") {
+        return expectedFor(panel(), state.phase, targetInfo().colors);
+      }
+      if (preset === "CUSTOM") {
+        return state.input;
+      }
+      return expectedFor(panel(), state.phase, COMBO_COLORS[preset]);
+    }
+
+    function presetOpsForPhase(panelInfo, phase) {
+      if (state.preset === "FOLLOW") {
+        return expectedFor(panelInfo, phase, targetInfo().colors);
+      }
+      if (state.preset === "CUSTOM") {
+        return phase === state.phase ? state.input : expectedFor(panelInfo, phase, targetInfo().colors);
+      }
+      return expectedFor(panelInfo, phase, COMBO_COLORS[state.preset]);
+    }
+
+    function visualInputColors() {
+      if (state.preset === "FOLLOW" || state.preset === "CUSTOM") {
+        return targetInfo().colors;
+      }
+      return COMBO_COLORS[state.preset];
+    }
+
+    function calc() {
+      const p = panel();
+      const target = targetInfo();
+      const now = expectedFor(p, state.phase, target.colors);
+      const prev = expectedFor(p, (state.phase + 3) % 4, target.colors);
+      const input = state.input;
+      const exact = sameOps(input, now);
+      const rising = andOps(now, notOps(prev));
+      const finalOd = exact ? rising : [0, 0, 0, 0, 0, 0];
+      const aliases = aliasPatterns(p, state.phase, now);
+      return { p, target, now, prev, input, exact, rising, finalOd, aliases };
+    }
+
+    function aliasPatterns(panelInfo, phase, referenceOps) {
+      return Object.keys(COMBO_COLORS).filter((patternId) => {
+        const ops = expectedFor(panelInfo, phase, COMBO_COLORS[patternId]);
+        return sameOps(ops, referenceOps);
+      });
+    }
+
+    function classForColor(color) {
+      return "pix-" + color.toLowerCase();
+    }
+
+    function bit(value, extraClass = "") {
+      const cls = value ? "one" : "zero";
+      return `<span class="bit ${cls} ${extraClass}">${value}</span>`;
+    }
+
+    function init() {
+      $("panelSelect").innerHTML = PANELS.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
+      $("panelSelect").value = String(state.panelId);
+      $("panelSelect").addEventListener("change", (event) => {
+        state.panelId = Number(event.target.value);
+        applyPreset();
+      });
+
+      $("targetSelect").innerHTML = TARGETS.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");
+      $("targetSelect").value = state.target;
+      $("targetSelect").addEventListener("change", (event) => {
+        state.target = event.target.value;
+        state.preset = "FOLLOW";
+        applyPreset();
+      });
+
+      $("phaseButtons").innerHTML = [0, 1, 2, 3].map((phase) => `<button type="button" data-phase="${phase}">L${phase + 1}</button>`).join("");
+      $("phaseButtons").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-phase]");
+        if (!button) return;
+        state.phase = Number(button.dataset.phase);
+        if (state.preset !== "CUSTOM") applyPreset();
+        render();
+      });
+
+      $("playButton").addEventListener("click", () => {
+        togglePlay();
+      });
+
+      $("odToggle").addEventListener("change", (event) => {
+        state.odEnabled = event.target.checked;
+        renderCharging();
+      });
+
+      $("presetButtons").innerHTML = PRESETS.map((p) => `<button type="button" data-preset="${p.id}">${p.label}</button>`).join("");
+      $("presetButtons").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-preset]");
+        if (!button) return;
+        state.preset = button.dataset.preset;
+        applyPreset();
+      });
+
+      $("opInputs").innerHTML = [1, 2, 3, 4, 5, 6].map((op) => `<button type="button" class="op-toggle" data-op="${op - 1}">OP${op}</button>`).join("");
+      $("opInputs").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-op]");
+        if (!button) return;
+        const idx = Number(button.dataset.op);
+        state.input[idx] = state.input[idx] ? 0 : 1;
+        state.preset = "CUSTOM";
+        render();
+      });
+
+      applyPreset();
+    }
+
+    function togglePlay() {
+      if (state.playing) {
+        stopPlay();
+      } else {
+        startPlay();
+      }
+      renderControls();
+    }
+
+    function startPlay() {
+      state.playing = true;
+      state.playTimer = window.setInterval(() => {
+        state.phase = (state.phase + 1) % 4;
+        if (state.preset !== "CUSTOM") {
+          state.input = presetOps(state.preset);
+        }
+        render();
+      }, 900);
+    }
+
+    function stopPlay() {
+      state.playing = false;
+      if (state.playTimer) {
+        window.clearInterval(state.playTimer);
+        state.playTimer = null;
+      }
+    }
+
+    function applyPreset() {
+      state.input = presetOps(state.preset);
+      render();
+    }
+
+    function render() {
+      renderControls();
+      renderSummary();
+      renderCharging();
+      renderPanelReference();
+      renderMapping();
+      renderDetail();
+      renderBatch();
+    }
+
+    function renderControls() {
+      $("panelSelect").value = String(state.panelId);
+      $("targetSelect").value = state.target;
+
+      document.querySelectorAll("#phaseButtons button").forEach((button) => {
+        button.classList.toggle("active", Number(button.dataset.phase) === state.phase);
+      });
+
+      document.querySelectorAll("#presetButtons button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.preset === state.preset);
+      });
+
+      document.querySelectorAll("#opInputs button").forEach((button) => {
+        const idx = Number(button.dataset.op);
+        button.classList.toggle("on", Boolean(state.input[idx]));
+        button.classList.toggle("off", !state.input[idx]);
+        button.textContent = `OP${idx + 1}: ${state.input[idx]}`;
+      });
+
+      const playButton = $("playButton");
+      playButton.classList.toggle("active", state.playing);
+      playButton.textContent = state.playing ? "Pause" : "Play";
+
+      const odToggle = $("odToggle");
+      odToggle.checked = state.odEnabled;
+      $("odToggleText").textContent = state.odEnabled ? "OD ON" : "OD OFF";
+      $("chargingTitle").textContent = state.odEnabled ? "OD ON" : "No OD";
+    }
+
+    function renderSummary() {
+      const c = calc();
+      const l0 = [c.finalOd[4], c.finalOd[2], c.finalOd[0]].join("");
+      const l1 = [c.finalOd[5], c.finalOd[3], c.finalOd[1]].join("");
+      const statusClass = c.exact ? "ok" : "bad";
+      const statusText = c.exact ? "DO DETECT" : "KILL OD";
+      const aliasClass = c.aliases.length > 1 ? "warn" : "ok";
+      $("summary").innerHTML = `
+        <div class="metric ${statusClass}">
+          <span>Exact Match</span>
+          <strong>${statusText}</strong>
+        </div>
+        <div class="metric">
+          <span>Expected Mask OP6..OP1</span>
+          <strong class="mono">${opsToBits(c.now)}</strong>
+        </div>
+        <div class="metric ${c.exact ? "ok" : "bad"}">
+          <span>Input Mask OP6..OP1</span>
+          <strong class="mono">${opsToBits(c.input)}</strong>
+        </div>
+        <div class="metric warn">
+          <span>0-&gt;1 Rising Count</span>
+          <strong>${countOps(c.rising)}</strong>
+        </div>
+        <div class="metric ${countOps(c.finalOd) ? "ok" : "bad"}">
+          <span>Final OD SEL L0 / L1</span>
+          <strong class="mono">${l0} / ${l1}</strong>
+        </div>
+        <div class="metric ${aliasClass}">
+          <span>Mask Alias Pattern</span>
+          <strong>${c.aliases.join(" / ")}</strong>
+        </div>
+      `;
+    }
+
+    function renderMapping() {
+      const p = panel();
+      const rows = p.phases.map((phase, rowIndex) => {
+        const cells = [0, 1, 2, 3, 4, 5].map((opIndex) => {
+          const color = colorAt(phase, opIndex);
+          return `<td class="cell-pix ${classForColor(color)}">${color}</td>`;
+        }).join("");
+        const cls = rowIndex === state.phase ? "phase-now" : "";
+        return `<tr class="${cls}"><td class="row-head">G${rowIndex + 1}</td>${cells}</tr>`;
+      }).join("");
+
+      $("mappingTable").innerHTML = `
+        <table>
+          <thead>
+            <tr><th>${p.name}</th><th>Y1/OP1</th><th>Y2/OP2</th><th>Y3/OP3</th><th>Y4/OP4</th><th>Y5/OP5</th><th>Y6/OP6</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderCharging() {
+      const c = calc();
+      const rowLabels = ["L1=G1+G2", "L2=G3+G4", "L3=G5+G6", "L4=G7+G8"];
+      $("chargingMode").textContent = `${c.p.name} / RGBRGB panel / Target ${c.target.id} / Input ${state.preset} / ${state.odEnabled ? "OD ON" : "OD OFF"}`;
+      $("chargingPanel").innerHTML = renderChargingPanel(state.odEnabled, rowLabels);
+      $("odToggle").checked = state.odEnabled;
+      $("odToggleText").textContent = state.odEnabled ? "OD ON" : "OD OFF";
+      $("chargingTitle").textContent = state.odEnabled ? "OD ON" : "No OD";
+    }
+
+    function renderPanelReference() {
+      const p = panel();
+      const image = $("panelReferenceImage");
+      const imagePath = PANEL_IMAGES[p.id];
+      $("panelReferenceName").textContent = p.name;
+      if (imagePath) {
+        image.src = imagePath;
+        image.alt = `${p.name} panel reference`;
+        image.style.display = "block";
+      } else {
+        image.removeAttribute("src");
+        image.alt = "No panel reference available";
+        image.style.display = "none";
+      }
+    }
+
+    function renderChargingPanel(withOd, rowLabels) {
+      const p = panel();
+      const visualColors = visualInputColors();
+      return rowLabels.map((label, rowIndex) => {
+        const topPhase = (rowIndex * 2) % 4;
+        const bottomPhase = (topPhase + 1) % 4;
+        const activePair = state.phase === topPhase || state.phase === bottomPhase;
+        const sequence = displaySequenceForRow(p, rowIndex);
+        const cells = sequence.map((displayLabel) => {
+          const pix = displayLabel[0];
+          const driver = resolveDisplayDriver(p, topPhase, bottomPhase, displayLabel);
+          const status = driver ? phaseOpStatus(p, driver.phase, driver.op) : null;
+          const active = visualColors.includes(pix);
+          const isRising = status ? status.rising === 1 : false;
+          const odOn = withOd && status ? status.finalOd === 1 : false;
+          const exact = status ? status.exact : false;
+          const classes = ["pixel-cell"];
+          if (active) classes.push(`drive-${pix.toLowerCase()}`);
+          if (active && isRising && !odOn) classes.push("undercharged");
+          if (odOn) classes.push("od-fixed");
+          if (withOd && active && !exact) classes.push("blocked");
+          const title = driver
+            ? `${label} ${displayLabel}: ${driver.side} L${driver.phase + 1} OP${driver.op + 1}`
+            : `${label} ${displayLabel}: no source`;
+          return `<div class="${classes.join(" ")}" title="${title}">${pix}</div>`;
+        }).join("");
+        const nowClass = activePair ? " phase-now-visual" : "";
+        return `
+          <div class="display-line${nowClass}">
+            <div class="pixel-row"><div class="line-label">${label}</div>${cells}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function displaySequenceForRow(panelInfo, rowIndex) {
+      const sourceMap = DISPLAY_SOURCE_MAP[panelInfo.id];
+      if (sourceMap) {
+        const topPhase = (rowIndex * 2) % 4;
+        const bottomPhase = (topPhase + 1) % 4;
+        const pairLabels = new Set([...sourceMap[topPhase], ...sourceMap[bottomPhase]]);
+        return Array.from({ length: 12 }, (_, index) => {
+          const color = ["R", "G", "B"][index % 3];
+          const group = Math.floor(index / 3) + 1;
+          const label = `${color}${group}`;
+          if (pairLabels.has(label)) return label;
+          if (pairLabels.has(`${color}0`)) return `${color}5`;
+          return label;
+        });
+      }
+
+      return ["R1", "G1", "B1", "R2", "G2", "B2", "R3", "G3", "B3", "R4", "G4", "B4"];
+    }
+
+    function resolveDisplayDriver(panelInfo, topPhase, bottomPhase, displayLabel) {
+      const sequence = DISPLAY_SOURCE_MAP[panelInfo.id];
+      if (sequence) {
+        const lookupLabels = sourceLookupLabels(panelInfo, topPhase, bottomPhase, displayLabel);
+        const phases = [
+          { side: "TOP", phase: topPhase },
+          { side: "BOT", phase: bottomPhase }
+        ];
+        for (const source of phases) {
+          const op = sequence[source.phase].findIndex((label) => lookupLabels.includes(label));
+          if (op >= 0) {
+            return { side: source.side, phase: source.phase, op };
+          }
+        }
+        return null;
+      }
+
+      const pix = displayLabel[0];
+      const opIndex = Math.max(0, Number(displayLabel.slice(1)) - 1);
+      const bottomOp = (opIndex + 5) % 6;
+      const candidates = [
+        { side: "TOP", phase: topPhase, op: opIndex },
+        { side: "BOT", phase: bottomPhase, op: bottomOp }
+      ];
+      return candidates.find((item) => colorAt(phaseData(panelInfo, item.phase), item.op) === pix) || candidates[0];
+    }
+
+    function sourceLookupLabels(panelInfo, topPhase, bottomPhase, displayLabel) {
+      const cycleMatch = displayLabel.match(/^([RGB])5$/);
+      if (cycleMatch) {
+        return [displayLabel, `${cycleMatch[1]}0`];
+      }
+      return [displayLabel];
+    }
+
+    function phaseOpStatus(panelInfo, phase, opIndex) {
+      const expected = expectedFor(panelInfo, phase, targetInfo().colors);
+      const previous = expectedFor(panelInfo, (phase + 3) % 4, targetInfo().colors);
+      const rising = andOps(expected, notOps(previous));
+      const input = presetOpsForPhase(panelInfo, phase);
+      const exact = sameOps(input, expected);
+      const finalOd = exact ? rising : [0, 0, 0, 0, 0, 0];
+      return {
+        expected: expected[opIndex],
+        input: input[opIndex],
+        rising: rising[opIndex],
+        exact,
+        finalOd: finalOd[opIndex]
+      };
+    }
+
+    function renderDetail() {
+      const c = calc();
+      const nowPhase = phaseData(c.p, state.phase);
+      const prevPhase = phaseData(c.p, (state.phase + 3) % 4);
+      const rows = [0, 1, 2, 3, 4, 5].map((opIndex) => {
+        const pix = colorAt(nowPhase, opIndex);
+        const prevPix = colorAt(prevPhase, opIndex);
+        const matchBit = c.input[opIndex] === c.now[opIndex] ? 1 : 0;
+        const decision = c.finalOd[opIndex]
+          ? `<span class="decision pass">OD</span>`
+          : `<span class="decision fail">OFF</span>`;
+        return `
+          <tr>
+            <td class="row-head">OP${opIndex + 1}</td>
+            <td>Y${opIndex + 1}</td>
+            <td class="cell-pix ${classForColor(pix)}">${pix}</td>
+            <td class="cell-pix ${classForColor(prevPix)}">${prevPix}</td>
+            <td>${bit(c.now[opIndex])}</td>
+            <td>${bit(c.input[opIndex], matchBit ? "" : "ng")}</td>
+            <td>${bit(matchBit, matchBit ? "" : "ng")}</td>
+            <td>${bit(c.rising[opIndex], c.rising[opIndex] ? "rise" : "")}</td>
+            <td>${c.exact ? decision : `<span class="decision fail">OFF</span>`}</td>
+          </tr>
+        `;
+      }).join("");
+
+      $("detailTable").innerHTML = `
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>OP</th>
+              <th>Y</th>
+              <th>Now Pix</th>
+              <th>Prev Pix</th>
+              <th>Expected</th>
+              <th>Input</th>
+              <th>Bit Match</th>
+              <th>0-&gt;1</th>
+              <th>OD</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderBatch() {
+      const patternRows = [];
+      PANELS.forEach((p) => {
+        TARGETS.forEach((target) => {
+          const phaseCells = [0, 1, 2, 3].map((phase) => {
+            const now = expectedFor(p, phase, target.colors);
+            const prev = expectedFor(p, (phase + 3) % 4, target.colors);
+            const rise = andOps(now, notOps(prev));
+            const aliases = aliasPatterns(p, phase, now);
+            const aliasText = aliases.length > 1 ? `alias ${aliases.join("/")}` : "unique";
+            return `<td><span class="mono">${opsToBits(now)}</span><br><span class="hint">rise ${countOps(rise)}, ${aliasText}</span></td>`;
+          }).join("");
+          patternRows.push(`<tr><td class="row-head">${p.name}</td><td>${target.id}</td>${phaseCells}</tr>`);
+        });
+      });
+
+      $("batchTable").innerHTML = `
+        <table>
+          <thead>
+            <tr><th>Panel</th><th>Pattern</th><th>L1</th><th>L2</th><th>L3</th><th>L4</th></tr>
+          </thead>
+          <tbody>${patternRows.join("")}</tbody>
+        </table>
+      `;
+    }
+
+    init();
+  </script>
+</body>
+</html>
