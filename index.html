@@ -467,6 +467,11 @@
       transform: translateX(22px);
     }
 
+    .od-toggle.disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
     .charging-panel {
       background: #59e3e8;
       border: 3px solid #3e8eb0;
@@ -668,6 +673,15 @@
         <div class="field">
           <label for="targetSelect">TCON Target Pattern</label>
           <select id="targetSelect"></select>
+        </div>
+
+        <div class="field">
+          <label>DPLC MODE</label>
+          <label class="od-toggle">
+            <input type="checkbox" id="dplcToggle">
+            <span class="switch-track" aria-hidden="true"></span>
+            <span id="dplcToggleText">DPLC OFF</span>
+          </label>
         </div>
       </div>
 
@@ -959,6 +973,7 @@
       preset: "FOLLOW",
       input: [0, 0, 0, 0, 0, 0],
       odEnabled: false,
+      dplcMode: false,
       playing: false,
       playTimer: null
     };
@@ -1059,9 +1074,10 @@
       const input = state.input;
       const exact = sameOps(input, now);
       const rising = andOps(now, notOps(prev));
-      const finalOd = exact ? rising : [0, 0, 0, 0, 0, 0];
+      const drdodAllowed = !state.dplcMode;
+      const finalOd = drdodAllowed && exact ? rising : [0, 0, 0, 0, 0, 0];
       const aliases = aliasPatterns(p, state.phase, now);
-      return { p, target, now, prev, input, exact, rising, finalOd, aliases };
+      return { p, target, now, prev, input, exact, rising, finalOd, aliases, drdodAllowed };
     }
 
     function aliasPatterns(panelInfo, phase, referenceOps) {
@@ -1110,8 +1126,20 @@
       });
 
       $("odToggle").addEventListener("change", (event) => {
+        if (state.dplcMode) {
+          state.odEnabled = false;
+          event.target.checked = false;
+          render();
+          return;
+        }
         state.odEnabled = event.target.checked;
         renderCharging();
+      });
+
+      $("dplcToggle").addEventListener("change", (event) => {
+        state.dplcMode = event.target.checked;
+        if (state.dplcMode) state.odEnabled = false;
+        render();
       });
 
       $("presetButtons").innerHTML = PRESETS.map((p) => `<button type="button" data-preset="${p.id}">${p.label}</button>`).join("");
@@ -1203,16 +1231,21 @@
 
       const odToggle = $("odToggle");
       odToggle.checked = state.odEnabled;
-      $("odToggleText").textContent = state.odEnabled ? "OD ON" : "OD OFF";
-      $("chargingTitle").textContent = state.odEnabled ? "OD ON" : "No OD";
+      odToggle.disabled = state.dplcMode;
+      odToggle.closest(".od-toggle").classList.toggle("disabled", state.dplcMode);
+      $("odToggleText").textContent = state.dplcMode ? "OD DISABLED" : (state.odEnabled ? "OD ON" : "OD OFF");
+      $("chargingTitle").textContent = state.dplcMode ? "DPLC MODE" : (state.odEnabled ? "OD ON" : "No OD");
+
+      $("dplcToggle").checked = state.dplcMode;
+      $("dplcToggleText").textContent = state.dplcMode ? "DPLC ON" : "DPLC OFF";
     }
 
     function renderSummary() {
       const c = calc();
       const l0 = [c.finalOd[4], c.finalOd[2], c.finalOd[0]].join("");
       const l1 = [c.finalOd[5], c.finalOd[3], c.finalOd[1]].join("");
-      const statusClass = c.exact ? "ok" : "bad";
-      const statusText = c.exact ? "DO DETECT" : "KILL OD";
+      const statusClass = !c.drdodAllowed ? "warn" : (c.exact ? "ok" : "bad");
+      const statusText = !c.drdodAllowed ? "DPLC MODE" : (c.exact ? "DO DETECT" : "KILL OD");
       const aliasClass = c.aliases.length > 1 ? "warn" : "ok";
       $("summary").innerHTML = `
         <div class="metric ${statusClass}">
@@ -1234,6 +1267,10 @@
         <div class="metric ${countOps(c.finalOd) ? "ok" : "bad"}">
           <span>Final OD SEL L0 / L1</span>
           <strong class="mono">${l0} / ${l1}</strong>
+        </div>
+        <div class="metric ${c.drdodAllowed ? "ok" : "warn"}">
+          <span>DRDOD Support</span>
+          <strong>${c.drdodAllowed ? "ENABLED" : "DISABLED"}</strong>
         </div>
         <div class="metric ${aliasClass}">
           <span>Mask Alias Pattern</span>
@@ -1266,11 +1303,14 @@
     function renderCharging() {
       const c = calc();
       const rowLabels = ["L1=G1+G2", "L2=G3+G4", "L3=G5+G6", "L4=G7+G8"];
-      $("chargingMode").textContent = `${c.p.name} / RGBRGB panel / Target ${c.target.id} / Input ${state.preset} / ${state.odEnabled ? "OD ON" : "OD OFF"}`;
-      $("chargingPanel").innerHTML = renderChargingPanel(state.odEnabled, rowLabels);
+      const odView = state.dplcMode ? "DPLC ON, DRDOD OFF" : (state.odEnabled ? "OD ON" : "OD OFF");
+      $("chargingMode").textContent = `${c.p.name} / RGBRGB panel / Target ${c.target.id} / Input ${state.preset} / ${odView}`;
+      $("chargingPanel").innerHTML = renderChargingPanel(state.odEnabled && !state.dplcMode, rowLabels);
       $("odToggle").checked = state.odEnabled;
-      $("odToggleText").textContent = state.odEnabled ? "OD ON" : "OD OFF";
-      $("chargingTitle").textContent = state.odEnabled ? "OD ON" : "No OD";
+      $("odToggle").disabled = state.dplcMode;
+      $("odToggle").closest(".od-toggle").classList.toggle("disabled", state.dplcMode);
+      $("odToggleText").textContent = state.dplcMode ? "OD DISABLED" : (state.odEnabled ? "OD ON" : "OD OFF");
+      $("chargingTitle").textContent = state.dplcMode ? "DPLC MODE" : (state.odEnabled ? "OD ON" : "No OD");
     }
 
     function renderPanelReference() {
@@ -1298,10 +1338,12 @@
         const activePair = state.phase === topPhase || state.phase === bottomPhase;
         const sequence = displaySequenceForRow(p, rowIndex);
         const cells = sequence.map((displayLabel) => {
+          const sourceLabel = dplcSourceLabel(displayLabel);
           const pix = displayLabel[0];
-          const driver = resolveDisplayDriver(p, topPhase, bottomPhase, displayLabel);
+          const sourcePix = sourceLabel[0];
+          const driver = resolveDisplayDriver(p, topPhase, bottomPhase, sourceLabel);
           const status = driver ? phaseOpStatus(p, driver.phase, driver.op) : null;
-          const active = visualColors.includes(pix);
+          const active = state.dplcMode ? visualColors.includes(sourcePix) : visualColors.includes(pix);
           const isRising = status ? status.rising === 1 : false;
           const odOn = withOd && status ? status.finalOd === 1 : false;
           const exact = status ? status.exact : false;
@@ -1311,8 +1353,8 @@
           if (odOn) classes.push("od-fixed");
           if (withOd && active && !exact) classes.push("blocked");
           const title = driver
-            ? `${label} ${displayLabel}: ${driver.side} L${driver.phase + 1} OP${driver.op + 1}`
-            : `${label} ${displayLabel}: no source`;
+            ? `${label} ${displayLabel}${state.dplcMode ? ` <= ${sourceLabel}` : ""}: ${driver.side} L${driver.phase + 1} OP${driver.op + 1}`
+            : `${label} ${displayLabel}${state.dplcMode ? ` <= ${sourceLabel}` : ""}: no source`;
           return `<div class="${classes.join(" ")}" title="${title}">${pix}</div>`;
         }).join("");
         const nowClass = activePair ? " phase-now-visual" : "";
@@ -1322,6 +1364,16 @@
           </div>
         `;
       }).join("");
+    }
+
+    function dplcSourceLabel(displayLabel) {
+      if (!state.dplcMode) return displayLabel;
+      const match = displayLabel.match(/^([RGB])(\d+)$/);
+      if (!match) return displayLabel;
+      const color = match[1];
+      const group = Number(match[2]);
+      const sourceGroup = group % 2 === 0 ? group - 1 : group;
+      return `${color}${sourceGroup}`;
     }
 
     function displaySequenceForRow(panelInfo, rowIndex) {
