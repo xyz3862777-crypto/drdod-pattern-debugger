@@ -227,13 +227,19 @@
     }
 
     .od-hit {
+      background: #ffffff;
       color: #07111f;
-      font-weight: 900;
+      font-weight: 800;
     }
 
     .od-frame {
+      font-weight: 900;
       box-shadow: inset 0 0 0 3px var(--od);
     }
+
+    .od-frame.pix-r { background: var(--r); }
+    .od-frame.pix-g { background: var(--g); }
+    .od-frame.pix-b { background: var(--b); color: #fff; }
 
     @media (max-width: 1160px) {
       .panel-block { grid-template-columns: 1fr; }
@@ -489,8 +495,8 @@
           }
           const label = sourceLabelAt(panelInfo, rowIndex, opIndex);
           const color = label[0] || colorAt(phase, opIndex);
-          const frameClass = rising[opIndex] ? " od-frame" : "";
-          return `<td class="pix-cell od-hit${frameClass} ${classForColor(color)}">${label}</td>`;
+          const odClass = rising[opIndex] ? ` od-frame ${classForColor(color)}` : "";
+          return `<td class="od-hit${odClass}">${label}</td>`;
         }).join("");
         return `<tr><td class="row-head">D${opIndex}</td>${cells}</tr>`;
       }).join("");
