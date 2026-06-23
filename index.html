@@ -329,6 +329,10 @@
       box-shadow: inset 0 0 0 2px #d8a824;
     }
 
+    .od-cell.hit.od-data {
+      box-shadow: inset 0 0 0 3px #d8a824, inset 0 0 0 5px rgba(255, 255, 255, 0.45);
+    }
+
     .od-cell.disabled {
       background: #eef1f6;
       color: #8a94a6;
@@ -1402,14 +1406,13 @@
           const copyClass = mapped.isCopy ? " dplc-copy" : "";
           return `<td class="cell-pix ${classForColor(color)}${copyClass}">${mapped.label}</td>`;
         }).join("");
-        const cls = rowIndex === state.phase ? "phase-now" : "";
-        return `<tr class="${cls}"><td class="row-head">G${rowIndex + 1}</td>${cells}</tr>`;
+        return `<tr><td class="row-head">LINE${rowIndex + 1}</td>${cells}</tr>`;
       }).join("");
 
       $("mappingTable").innerHTML = `
         <table>
           <thead>
-            <tr><th>${p.name}</th><th>Y1/OP1</th><th>Y2/OP2</th><th>Y3/OP3</th><th>Y4/OP4</th><th>Y5/OP5</th><th>Y6/OP6</th></tr>
+            <tr><th>${p.name}</th><th>D0</th><th>D1</th><th>D2</th><th>D3</th><th>D4</th><th>D5</th></tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
@@ -1436,16 +1439,15 @@
           }
           const label = sourceLabelAt(c.p, rowIndex, opIndex);
           const color = label[0] || colorAt(phase, opIndex);
-          return `<td class="od-cell hit ${classForColor(color)}">${label}</td>`;
+          return `<td class="od-cell hit od-data ${classForColor(color)}">${label}</td>`;
         }).join("");
-        const cls = rowIndex === state.phase ? "phase-now" : "";
-        return `<tr class="${cls}"><td class="row-head">G${rowIndex + 1}</td>${cells}</tr>`;
+        return `<tr><td class="row-head">LINE${rowIndex + 1}</td>${cells}</tr>`;
       }).join("");
 
       $("odPositionTable").innerHTML = `
         <table>
           <thead>
-            <tr><th>${c.target.id}</th><th>Y1/OP1</th><th>Y2/OP2</th><th>Y3/OP3</th><th>Y4/OP4</th><th>Y5/OP5</th><th>Y6/OP6</th></tr>
+            <tr><th>${c.target.id}</th><th>D0</th><th>D1</th><th>D2</th><th>D3</th><th>D4</th><th>D5</th></tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
