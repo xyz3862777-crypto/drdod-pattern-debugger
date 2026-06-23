@@ -391,6 +391,17 @@
       12: [["R1", "R2", "B2", "R3", "R4", "B4"], ["G1", "B1", "G2", "G3", "B3", "G4"], ["B0", "R1", "R2", "B2", "R3", "R4"], ["G0", "G1", "B1", "G2", "G3", "B3"]]
     };
 
+    const PANEL_GROUPS = [
+      { id: "HKC1_HKC7", name: "HKC1 / HKC7", panelId: 1 },
+      { id: "HKC2", name: "HKC2", panelId: 2 },
+      { id: "HKC3_CSOT1", name: "HKC3 / CSOT1", panelId: 3 },
+      { id: "HKC4_HKC6_TIANMA1", name: "HKC4 / HKC6 / TIANMA1", panelId: 4 },
+      { id: "HKC5", name: "HKC5", panelId: 5 },
+      { id: "HKC8", name: "HKC8", panelId: 8 },
+      { id: "BOE1", name: "BOE1", panelId: 10 },
+      { id: "BOE2", name: "BOE2 (不須DRDOD)", panelId: 11, drdod: false }
+    ];
+
     const state = {
       panelFilter: "ALL",
       phase: 1
@@ -419,6 +430,10 @@
       return sourceMap ? sourceMap[rowIndex][opIndex] : colorAt(panelInfo.phases[rowIndex], opIndex);
     }
 
+    function panelById(panelId) {
+      return PANELS.find((item) => item.id === panelId);
+    }
+
     function expectedFor(panelInfo, phase, colors) {
       return [0, 1, 2, 3, 4, 5].map((opIndex) => {
         const label = sourceLabelAt(panelInfo, phase, opIndex);
@@ -429,7 +444,7 @@
     function renderControls() {
       $("panelFilter").innerHTML = [
         `<option value="ALL">ALL PANEL TYPE</option>`,
-        ...PANELS.map((item) => `<option value="${item.id}">${item.name}</option>`)
+        ...PANEL_GROUPS.map((item) => `<option value="${item.id}">${item.name}</option>`)
       ].join("");
       $("phaseSelect").innerHTML = [0, 1, 2, 3].map((phase) => `<option value="${phase}">LINE${phase + 1}</option>`).join("");
       $("panelFilter").value = state.panelFilter;
@@ -495,21 +510,22 @@
       `;
     }
 
-    function renderPanelBlock(panelInfo) {
+    function renderPanelBlock(panelGroup) {
+      const panelInfo = panelById(panelGroup.panelId);
       const patterns = TARGETS.map((targetInfo) => `
         <section class="pattern-card">
           <div class="table-head">
             <h3>${targetInfo.label}</h3>
-            <span class="badge">DO OD</span>
+            <span class="badge">${panelGroup.drdod === false ? "NO DRDOD" : "DO OD"}</span>
           </div>
           ${renderOdTable(panelInfo, targetInfo)}
         </section>
       `).join("");
 
       return `
-        <article class="panel-block" data-panel-id="${panelInfo.id}">
+        <article class="panel-block" data-panel-id="${panelGroup.id}">
           <div class="panel-title">
-            <h2>${panelInfo.name}</h2>
+            <h2>${panelGroup.name}</h2>
             <span class="badge">R / G / B / Y / M / C</span>
           </div>
           <section class="mapping-card">
@@ -531,7 +547,7 @@
     function render() {
       $("panelFilter").value = state.panelFilter;
       $("phaseSelect").value = String(state.phase);
-      $("summaryRoot").innerHTML = PANELS.map(renderPanelBlock).join("");
+      $("summaryRoot").innerHTML = PANEL_GROUPS.map(renderPanelBlock).join("");
       renderVisibility();
     }
 
