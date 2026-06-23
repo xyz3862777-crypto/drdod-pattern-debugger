@@ -347,7 +347,6 @@
     .pix-w { background: var(--w); }
     .pix-k { background: var(--k); }
 
-    .phase-now td,
     .phase-now .row-head {
       outline: 2px solid #2b64d8;
       outline-offset: -2px;
@@ -1405,7 +1404,8 @@
           const copyClass = mapped.isCopy ? " dplc-copy" : "";
           return `<td class="cell-pix ${classForColor(color)}${copyClass}">${mapped.label}</td>`;
         }).join("");
-        return `<tr><td class="row-head">G${rowIndex + 1}</td>${cells}</tr>`;
+        const cls = rowIndex === state.phase ? "phase-now" : "";
+        return `<tr class="${cls}"><td class="row-head">G${rowIndex + 1}</td>${cells}</tr>`;
       }).join("");
 
       $("mappingTable").innerHTML = `
@@ -1433,15 +1433,16 @@
           if (state.dplcMode) {
             return `<td class="od-cell disabled">OFF</td>`;
           }
-          if (!rising[opIndex]) {
+          if (!now[opIndex]) {
             return `<td class="od-cell">0</td>`;
           }
           const label = sourceLabelAt(c.p, rowIndex, opIndex);
           const color = label[0] || colorAt(phase, opIndex);
-          const odClass = rowIndex === state.phase && c.finalOd[opIndex] ? " od-data" : "";
+          const odClass = rising[opIndex] ? " od-data" : "";
           return `<td class="od-cell hit${odClass} ${classForColor(color)}">${label}</td>`;
         }).join("");
-        return `<tr><td class="row-head">LINE${rowIndex + 1}</td>${cells}</tr>`;
+        const cls = rowIndex === state.phase ? "phase-now" : "";
+        return `<tr class="${cls}"><td class="row-head">LINE${rowIndex + 1}</td>${cells}</tr>`;
       }).join("");
 
       $("odPositionTable").innerHTML = `
