@@ -1405,13 +1405,13 @@
           const copyClass = mapped.isCopy ? " dplc-copy" : "";
           return `<td class="cell-pix ${classForColor(color)}${copyClass}">${mapped.label}</td>`;
         }).join("");
-        return `<tr><td class="row-head">LINE${rowIndex + 1}</td>${cells}</tr>`;
+        return `<tr><td class="row-head">G${rowIndex + 1}</td>${cells}</tr>`;
       }).join("");
 
       $("mappingTable").innerHTML = `
         <table>
           <thead>
-            <tr><th>${p.name}</th><th>D0</th><th>D1</th><th>D2</th><th>D3</th><th>D4</th><th>D5</th></tr>
+            <tr><th>${p.name}</th><th>OP1</th><th>OP2</th><th>OP3</th><th>OP4</th><th>OP5</th><th>OP6</th></tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
