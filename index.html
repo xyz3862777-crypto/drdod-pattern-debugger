@@ -326,7 +326,6 @@
     .od-cell.hit {
       color: #111827;
       font-weight: 900;
-      box-shadow: inset 0 0 0 2px #d8a824;
     }
 
     .od-cell.hit.od-data {
@@ -1439,7 +1438,8 @@
           }
           const label = sourceLabelAt(c.p, rowIndex, opIndex);
           const color = label[0] || colorAt(phase, opIndex);
-          return `<td class="od-cell hit od-data ${classForColor(color)}">${label}</td>`;
+          const odClass = rowIndex === state.phase && c.finalOd[opIndex] ? " od-data" : "";
+          return `<td class="od-cell hit${odClass} ${classForColor(color)}">${label}</td>`;
         }).join("");
         return `<tr><td class="row-head">LINE${rowIndex + 1}</td>${cells}</tr>`;
       }).join("");
