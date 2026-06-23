@@ -155,6 +155,26 @@
       white-space: nowrap;
     }
 
+    .side-link-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .side-link-button:hover {
+      border-color: var(--focus);
+      background: #eaf0ff;
+      color: #123f9f;
+    }
+
     .quick {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -771,6 +791,11 @@
         <div class="field">
           <label for="panelSelect">Panel 架構</label>
           <select id="panelSelect"></select>
+        </div>
+
+        <div class="field">
+          <label>Reference</label>
+          <a class="side-link-button" href="panel-architecture-summary.html" target="_blank" rel="noopener">面板架構總表</a>
         </div>
 
         <div class="field">
