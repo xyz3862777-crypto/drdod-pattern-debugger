@@ -785,7 +785,7 @@
   <div class="app">
     <aside>
       <h1>Pattern Detect Debugger</h1>
-      <p class="sub">Panel mapping, exact match, 0-&gt;1 rising, final DRDOD enable.</p>
+      <p class="sub">Panel mapping, pattern match, OD weight mask, final DRDOD enable.</p>
 
       <div class="control-group">
         <div class="field">
@@ -835,7 +835,7 @@
 
       <div class="control-group">
         <h3>Verilog 對應</h3>
-        <p class="hint mono">L0 = OP1, OP3, OP5<br>L1 = OP2, OP4, OP6<br>final OD = exact_match ? now &amp; ~prev : 0</p>
+        <p class="hint mono">L0 = OP1, OP3, OP5<br>L1 = OP2, OP4, OP6<br>final OD = pattern_hit ? od_weight_match : 0</p>
       </div>
     </aside>
 
@@ -871,7 +871,7 @@
         </div>
         <div class="charging-note">
           <div class="note-box"><strong>Black cell</strong><span>Input is 0 or not part of this target pattern.</span></div>
-          <div class="note-box"><strong>Dim cell</strong><span>OD OFF and 0-&gt;1 charging may not reach target voltage.</span></div>
+          <div class="note-box"><strong>Dim cell</strong><span>OD OFF and selected OD weight cell may not reach target voltage.</span></div>
           <div class="note-box"><strong>DPLC / OD</strong><span>Yellow circle marks duplicated subpix in DPLC; OD remains disabled.</span></div>
         </div>
       </section>
@@ -914,11 +914,6 @@
             <span class="legend-item"><span class="swatch pix-c"></span>C=G+B</span>
             <span class="legend-item"><span class="swatch pix-m"></span>M=R+B</span>
           </div>
-        </section>
-
-        <section class="section wide-section">
-          <h2>Detect Result</h2>
-          <div id="detailTable"></div>
         </section>
       </div>
 
@@ -1043,15 +1038,107 @@
     };
 
     const PANEL_GROUPS = [
-      { id: "HKC1_HKC7", name: "HKC1 / HKC7", panelId: 1 },
-      { id: "HKC2", name: "HKC2", panelId: 2 },
-      { id: "HKC3_CSOT1", name: "HKC3 / CSOT1", panelId: 3 },
-      { id: "HKC4_HKC6_TIANMA1", name: "HKC4 / HKC6 / TIANMA1", panelId: 4 },
-      { id: "HKC5", name: "HKC5", panelId: 5 },
-      { id: "HKC8", name: "HKC8", panelId: 8 },
-      { id: "BOE1", name: "BOE1", panelId: 10 },
-      { id: "BOE2", name: "BOE2 (不須DRDOD)", panelId: 11, drdod: false }
+      { id: "HKC1_HKC7", name: "HKC1 / HKC7", panelId: 1, drdPanel: 1 },
+      { id: "HKC2", name: "HKC2", panelId: 2, drdPanel: 2 },
+      { id: "HKC3_CSOT1", name: "HKC3 / CSOT1", panelId: 3, drdPanel: 3 },
+      { id: "HKC4_HKC6_TIANMA1", name: "HKC4 / HKC6 / TIANMA1", panelId: 4, drdPanel: 4 },
+      { id: "HKC5", name: "HKC5", panelId: 5, drdPanel: 5 },
+      { id: "HKC8", name: "HKC8", panelId: 8, drdPanel: 6 },
+      { id: "BOE1", name: "BOE1", panelId: 10, drdPanel: 7 },
+      { id: "BOE2", name: "BOE2 (不須DRDOD)", panelId: 11, drdod: false, drdPanel: 0 }
     ];
+
+    const OD_PATTERN_K = { R: 1, G: 2, B: 3, Y: 4, C: 5, M: 6 };
+
+    const OD_PATTERN_MATCH_TABLE = {
+      1: [
+        ["011011", "000000", "100100", "011011", "100100", "111111"],
+        ["000000", "011011", "100100", "011011", "111111", "100100"],
+        ["110110", "000000", "001001", "110110", "001001", "111111"],
+        ["000000", "101101", "010010", "101101", "111111", "010010"]
+      ],
+      2: [
+        ["110110", "001001", "000000", "111111", "001001", "110110"],
+        ["000000", "010010", "101101", "010010", "111111", "101101"],
+        ["011011", "100100", "000000", "111111", "100100", "011011"],
+        ["000000", "001001", "110110", "001001", "111111", "110110"]
+      ],
+      3: [
+        ["001001", "000000", "110110", "001001", "110110", "111111"],
+        ["010010", "101101", "000000", "111111", "101101", "010010"],
+        ["010010", "000000", "101101", "010010", "101101", "111111"],
+        ["100100", "011011", "000000", "111111", "011011", "100100"]
+      ],
+      4: [
+        ["011011", "000000", "100100", "011011", "100100", "111111"],
+        ["000000", "101101", "010010", "101101", "111111", "010010"],
+        ["110110", "000000", "001001", "110110", "001001", "111111"],
+        ["000000", "011011", "100100", "011011", "111111", "100100"]
+      ],
+      5: [
+        ["110110", "000000", "001001", "110110", "001001", "111111"],
+        ["000000", "011011", "100100", "011011", "111111", "100100"],
+        ["011011", "000000", "100100", "011011", "100100", "111111"],
+        ["000000", "101101", "010010", "101101", "111111", "010010"]
+      ],
+      6: [
+        ["010010", "101101", "000000", "111111", "101101", "010010"],
+        ["010010", "000000", "101101", "010010", "101101", "111111"],
+        ["100100", "011011", "000000", "111111", "011011", "100100"],
+        ["001001", "000000", "110110", "001001", "110110", "111111"]
+      ],
+      7: [
+        ["000000", "101101", "010010", "101101", "111111", "010010"],
+        ["011011", "000000", "100100", "011011", "100100", "111111"],
+        ["000000", "011011", "100100", "011011", "111111", "100100"],
+        ["110110", "000000", "001001", "110110", "001001", "111111"]
+      ]
+    };
+
+    const OD_WEIGHT_MATCH_TABLE = {
+      1: [
+        ["011011", "000000", "100100", "010010", "000000", "101101"],
+        ["000000", "011011", "000000", "000000", "011011", "000000"],
+        ["110110", "000000", "001001", "100100", "000000", "011011"],
+        ["000000", "101101", "010010", "001001", "110110", "000000"]
+      ],
+      2: [
+        ["110110", "000000", "000000", "110110", "000000", "000000"],
+        ["000000", "010010", "101101", "000000", "110110", "001001"],
+        ["011011", "100100", "000000", "101101", "000000", "010010"],
+        ["000000", "001001", "110110", "000000", "011011", "100100"]
+      ],
+      3: [
+        ["001001", "000000", "110110", "000000", "100100", "011011"],
+        ["010010", "101101", "000000", "110110", "001001", "000000"],
+        ["000000", "000000", "101101", "000000", "000000", "101101"],
+        ["100100", "011011", "000000", "101101", "010010", "000000"]
+      ],
+      4: [
+        ["011011", "000000", "000000", "000000", "000000", "011011"],
+        ["000000", "101101", "010010", "100100", "011011", "000000"],
+        ["110110", "000000", "001001", "010010", "000000", "101101"],
+        ["000000", "011011", "100100", "001001", "110110", "000000"]
+      ],
+      5: [
+        ["110110", "000000", "001001", "010010", "000000", "101101"],
+        ["000000", "011011", "100100", "001001", "110110", "000000"],
+        ["011011", "000000", "000000", "000000", "000000", "011011"],
+        ["000000", "101101", "010010", "100100", "011011", "000000"]
+      ],
+      6: [
+        ["010010", "101101", "000000", "110110", "001001", "000000"],
+        ["000000", "000000", "101101", "000000", "000000", "101101"],
+        ["100100", "011011", "000000", "101101", "010010", "000000"],
+        ["001001", "000000", "110110", "000000", "100100", "011011"]
+      ],
+      7: [
+        ["000000", "101101", "010010", "001001", "110110", "000000"],
+        ["011011", "000000", "100100", "010010", "000000", "101101"],
+        ["000000", "011011", "000000", "000000", "011011", "000000"],
+        ["110110", "000000", "001001", "100100", "000000", "011011"]
+      ]
+    };
 
     const COMBO_COLORS = {
       R: ["R"],
@@ -1157,6 +1244,10 @@
       return bits.split("").reverse().map((b) => b === "1" ? 1 : 0);
     }
 
+    function verilogBitsToOps(bits = "000000") {
+      return bitsToOps(bits);
+    }
+
     function opsToBits(ops) {
       return ops.slice().reverse().map(String).join("");
     }
@@ -1220,20 +1311,26 @@
 
     function presetOps(preset) {
       if (preset === "FOLLOW") {
-        return expectedFor(panel(), state.phase, targetInfo().colors);
+        return detectMasks(panel(), state.phase, targetInfo().id).patternMask;
       }
       if (preset === "CUSTOM") {
         return state.input;
+      }
+      if (OD_PATTERN_K[preset]) {
+        return detectMasks(panel(), state.phase, preset).patternMask;
       }
       return expectedFor(panel(), state.phase, COMBO_COLORS[preset]);
     }
 
     function presetOpsForPhase(panelInfo, phase) {
       if (state.preset === "FOLLOW") {
-        return expectedFor(panelInfo, phase, targetInfo().colors);
+        return detectMasks(panelInfo, phase, targetInfo().id).patternMask;
       }
       if (state.preset === "CUSTOM") {
-        return phase === state.phase ? state.input : expectedFor(panelInfo, phase, targetInfo().colors);
+        return phase === state.phase ? state.input : detectMasks(panelInfo, phase, targetInfo().id).patternMask;
+      }
+      if (OD_PATTERN_K[state.preset]) {
+        return detectMasks(panelInfo, phase, state.preset).patternMask;
       }
       return expectedFor(panelInfo, phase, COMBO_COLORS[state.preset]);
     }
@@ -1248,20 +1345,34 @@
     function calc() {
       const p = panel();
       const target = targetInfo();
-      const now = expectedFor(p, state.phase, target.colors);
-      const prev = expectedFor(p, (state.phase + 3) % 4, target.colors);
+      const pattern = detectMasks(p, state.phase, target.id);
+      const now = pattern.patternMask;
       const input = state.input;
-      const exact = sameOps(input, now);
-      const rising = andOps(now, notOps(prev));
-      const drdodAllowed = !state.dplcMode;
-      const finalOd = drdodAllowed && exact ? rising : [0, 0, 0, 0, 0, 0];
+      const exact = sameOps(input, pattern.patternMask);
+      const drdodAllowed = !state.dplcMode && p.group.drdod !== false && p.group.drdPanel > 0;
+      const finalOd = drdodAllowed && exact ? pattern.weightMask : [0, 0, 0, 0, 0, 0];
       const aliases = aliasPatterns(p, state.phase, now);
-      return { p, target, now, prev, input, exact, rising, finalOd, aliases, drdodAllowed };
+      return { p, target, now, input, exact, weightMask: pattern.weightMask, finalOd, aliases, drdodAllowed, drdPanel: p.group.drdPanel };
+    }
+
+    function detectMasks(panelInfo, phase, targetId) {
+      const drdPanel = panelInfo.group?.drdPanel || 0;
+      const patternK = OD_PATTERN_K[targetId] || 0;
+      const patternBits = OD_PATTERN_MATCH_TABLE[drdPanel]?.[phase]?.[patternK - 1] || "000000";
+      const weightBits = OD_WEIGHT_MATCH_TABLE[drdPanel]?.[phase]?.[patternK - 1] || "000000";
+      return {
+        patternMask: verilogBitsToOps(patternBits),
+        weightMask: verilogBitsToOps(weightBits)
+      };
+    }
+
+    function weightFor(panelInfo, phase, targetId = state.target) {
+      return detectMasks(panelInfo, phase, targetId).weightMask;
     }
 
     function aliasPatterns(panelInfo, phase, referenceOps) {
-      return Object.keys(COMBO_COLORS).filter((patternId) => {
-        const ops = expectedFor(panelInfo, phase, COMBO_COLORS[patternId]);
+      return TARGETS.map((target) => target.id).filter((patternId) => {
+        const ops = detectMasks(panelInfo, phase, patternId).patternMask;
         return sameOps(ops, referenceOps);
       });
     }
@@ -1383,7 +1494,6 @@
       renderMapping();
       renderOdPosition();
       renderPatternDetectResult();
-      renderDetail();
       renderBatch();
     }
 
@@ -1426,7 +1536,7 @@
       const l0 = [c.finalOd[4], c.finalOd[2], c.finalOd[0]].join("");
       const l1 = [c.finalOd[5], c.finalOd[3], c.finalOd[1]].join("");
       const statusClass = !c.drdodAllowed ? "warn" : (c.exact ? "ok" : "bad");
-      const statusText = !c.drdodAllowed ? "DPLC MODE" : (c.exact ? "DO DETECT" : "KILL OD");
+      const statusText = !c.drdodAllowed ? "DRDOD OFF" : (c.exact ? "DO DETECT" : "KILL OD");
       const aliasClass = c.aliases.length > 1 ? "warn" : "ok";
       $("summary").innerHTML = `
         <div class="metric ${statusClass}">
@@ -1434,7 +1544,7 @@
           <strong>${statusText}</strong>
         </div>
         <div class="metric">
-          <span>Expected Mask OP6..OP1</span>
+          <span>Pattern Mask OP6..OP1</span>
           <strong class="mono">${opsToBits(c.now)}</strong>
         </div>
         <div class="metric ${c.exact ? "ok" : "bad"}">
@@ -1442,8 +1552,8 @@
           <strong class="mono">${opsToBits(c.input)}</strong>
         </div>
         <div class="metric warn">
-          <span>0-&gt;1 Rising Count</span>
-          <strong>${countOps(c.rising)}</strong>
+          <span>OD Weight Count</span>
+          <strong>${countOps(c.weightMask)}</strong>
         </div>
         <div class="metric ${countOps(c.finalOd) ? "ok" : "bad"}">
           <span>Final OD SEL L0 / L1</span>
@@ -1494,18 +1604,17 @@
 
       const rows = [0, 1, 2, 3, 4, 5].map((opIndex) => {
         const cells = c.p.phases.map((phase, rowIndex) => {
-          const now = expectedFor(c.p, rowIndex, c.target.colors);
-          const prev = expectedFor(c.p, (rowIndex + 3) % 4, c.target.colors);
-          const rising = andOps(now, notOps(prev));
+          const patternMask = detectMasks(c.p, rowIndex, c.target.id).patternMask;
+          const weightMask = weightFor(c.p, rowIndex, c.target.id);
           if (state.dplcMode) {
             return `<td class="od-cell disabled">OFF</td>`;
           }
-          if (!now[opIndex]) {
+          if (!patternMask[opIndex]) {
             return `<td class="od-cell">0</td>`;
           }
           const label = sourceLabelAt(c.p, rowIndex, opIndex);
           const color = label[0] || colorAt(phase, opIndex);
-          const odClass = rising[opIndex] ? " od-data" : "";
+          const odClass = weightMask[opIndex] ? " od-data" : "";
           return `<td class="od-cell hit${odClass} ${classForColor(color)}">${label}</td>`;
         }).join("");
         return `<tr><td class="row-head">D${opIndex}</td>${cells}</tr>`;
@@ -1538,7 +1647,7 @@
             <td>${bit(c.now[opIndex])}</td>
             <td>${bit(c.input[opIndex], matchBit ? "" : "ng")}</td>
             <td>${bit(matchBit, matchBit ? "" : "ng")}</td>
-            <td>${bit(c.rising[opIndex], c.rising[opIndex] ? "rise" : "")}</td>
+            <td>${bit(c.weightMask[opIndex], c.weightMask[opIndex] ? "rise" : "")}</td>
             <td>${c.finalOd[opIndex] ? `<span class="decision pass">OD</span>` : `<span class="decision fail">OFF</span>`}</td>
           </tr>
         `;
@@ -1549,10 +1658,10 @@
           <thead>
             <tr>
               <th>DATA</th>
-              <th>Expected</th>
+              <th>Pattern Mask</th>
               <th>Input</th>
               <th>Match</th>
-              <th>0-&gt;1</th>
+              <th>Weight Mask</th>
               <th>Result</th>
             </tr>
           </thead>
@@ -1622,14 +1731,14 @@
           const driver = resolveDisplayDriver(p, topPhase, bottomPhase, sourceLabel);
           const status = driver ? phaseOpStatus(p, driver.phase, driver.op) : null;
           const active = state.dplcMode ? visualColors.includes(sourcePix) : visualColors.includes(pix);
-          const isRising = status ? status.rising === 1 : false;
+          const needsOd = status ? status.weightMask === 1 : false;
           const odOn = withOd && status ? status.finalOd === 1 : false;
           const exact = status ? status.exact : false;
           const classes = ["pixel-cell"];
           classes.push("pixel-label");
           if (isDuplicate) classes.push("dplc-duplicate");
           if (active) classes.push(`drive-${pix.toLowerCase()}`);
-          if (active && isRising && !odOn) classes.push("undercharged");
+          if (active && needsOd && !odOn) classes.push("undercharged");
           if (odOn) classes.push("od-fixed");
           if (withOd && active && !exact) classes.push("blocked");
           const title = driver
@@ -1711,65 +1820,19 @@
     }
 
     function phaseOpStatus(panelInfo, phase, opIndex) {
-      const expected = expectedFor(panelInfo, phase, targetInfo().colors);
-      const previous = expectedFor(panelInfo, (phase + 3) % 4, targetInfo().colors);
-      const rising = andOps(expected, notOps(previous));
+      const expected = detectMasks(panelInfo, phase, targetInfo().id).patternMask;
+      const weightMask = weightFor(panelInfo, phase, targetInfo().id);
       const input = presetOpsForPhase(panelInfo, phase);
       const exact = sameOps(input, expected);
-      const finalOd = exact ? rising : [0, 0, 0, 0, 0, 0];
+      const drdodAllowed = !state.dplcMode && panelInfo.group?.drdod !== false && panelInfo.group?.drdPanel > 0;
+      const finalOd = drdodAllowed && exact ? weightMask : [0, 0, 0, 0, 0, 0];
       return {
         expected: expected[opIndex],
         input: input[opIndex],
-        rising: rising[opIndex],
+        weightMask: weightMask[opIndex],
         exact,
         finalOd: finalOd[opIndex]
       };
-    }
-
-    function renderDetail() {
-      const c = calc();
-      const nowPhase = phaseData(c.p, state.phase);
-      const prevPhase = phaseData(c.p, (state.phase + 3) % 4);
-      const rows = [0, 1, 2, 3, 4, 5].map((opIndex) => {
-        const pix = colorAt(nowPhase, opIndex);
-        const prevPix = colorAt(prevPhase, opIndex);
-        const matchBit = c.input[opIndex] === c.now[opIndex] ? 1 : 0;
-        const decision = c.finalOd[opIndex]
-          ? `<span class="decision pass">OD</span>`
-          : `<span class="decision fail">OFF</span>`;
-        return `
-          <tr>
-            <td class="row-head">OP${opIndex + 1}</td>
-            <td>Y${opIndex + 1}</td>
-            <td class="cell-pix ${classForColor(pix)}">${pix}</td>
-            <td class="cell-pix ${classForColor(prevPix)}">${prevPix}</td>
-            <td>${bit(c.now[opIndex])}</td>
-            <td>${bit(c.input[opIndex], matchBit ? "" : "ng")}</td>
-            <td>${bit(matchBit, matchBit ? "" : "ng")}</td>
-            <td>${bit(c.rising[opIndex], c.rising[opIndex] ? "rise" : "")}</td>
-            <td>${c.exact ? decision : `<span class="decision fail">OFF</span>`}</td>
-          </tr>
-        `;
-      }).join("");
-
-      $("detailTable").innerHTML = `
-        <table class="detail-table">
-          <thead>
-            <tr>
-              <th>OP</th>
-              <th>Y</th>
-              <th>Now Pix</th>
-              <th>Prev Pix</th>
-              <th>Expected</th>
-              <th>Input</th>
-              <th>Bit Match</th>
-              <th>0-&gt;1</th>
-              <th>OD</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
     }
 
     function renderBatch() {
@@ -1779,12 +1842,10 @@
         const p = { ...sourcePanel, name: group.name, group };
         TARGETS.forEach((target) => {
           const phaseCells = [0, 1, 2, 3].map((phase) => {
-            const now = expectedFor(p, phase, target.colors);
-            const prev = expectedFor(p, (phase + 3) % 4, target.colors);
-            const rise = andOps(now, notOps(prev));
-            const aliases = aliasPatterns(p, phase, now);
+            const masks = detectMasks(p, phase, target.id);
+            const aliases = aliasPatterns(p, phase, masks.patternMask);
             const aliasText = aliases.length > 1 ? `alias ${aliases.join("/")}` : "unique";
-            return `<td><span class="mono">${opsToBits(now)}</span><br><span class="hint">rise ${countOps(rise)}, ${aliasText}</span></td>`;
+            return `<td><span class="mono">${opsToBits(masks.patternMask)}</span><br><span class="hint">weight ${countOps(masks.weightMask)}, ${aliasText}</span></td>`;
           }).join("");
           patternRows.push(`<tr><td class="row-head">${p.name}</td><td>${target.id}</td>${phaseCells}</tr>`);
         });
