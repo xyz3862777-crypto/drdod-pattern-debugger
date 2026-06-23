@@ -1042,6 +1042,17 @@
       12: "assets/panels/TIANMA1.png"
     };
 
+    const PANEL_GROUPS = [
+      { id: "HKC1_HKC7", name: "HKC1 / HKC7", panelId: 1 },
+      { id: "HKC2", name: "HKC2", panelId: 2 },
+      { id: "HKC3_CSOT1", name: "HKC3 / CSOT1", panelId: 3 },
+      { id: "HKC4_HKC6_TIANMA1", name: "HKC4 / HKC6 / TIANMA1", panelId: 4 },
+      { id: "HKC5", name: "HKC5", panelId: 5 },
+      { id: "HKC8", name: "HKC8", panelId: 8 },
+      { id: "BOE1", name: "BOE1", panelId: 10 },
+      { id: "BOE2", name: "BOE2 (不須DRDOD)", panelId: 11, drdod: false }
+    ];
+
     const COMBO_COLORS = {
       R: ["R"],
       G: ["G"],
@@ -1129,7 +1140,7 @@
     };
 
     const state = {
-      panelId: 3,
+      panelGroupId: "HKC3_CSOT1",
       phase: 1,
       target: "C",
       preset: "FOLLOW",
@@ -1171,7 +1182,13 @@
     }
 
     function panel() {
-      return PANELS.find((p) => p.id === state.panelId);
+      const group = panelGroup();
+      const panelInfo = PANELS.find((p) => p.id === group.panelId);
+      return { ...panelInfo, name: group.name, group };
+    }
+
+    function panelGroup() {
+      return PANEL_GROUPS.find((group) => group.id === state.panelGroupId) || PANEL_GROUPS[0];
     }
 
     function phaseData(p, phase) {
@@ -1259,10 +1276,10 @@
     }
 
     function init() {
-      $("panelSelect").innerHTML = PANELS.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
-      $("panelSelect").value = String(state.panelId);
+      $("panelSelect").innerHTML = PANEL_GROUPS.map((group) => `<option value="${group.id}">${group.name}</option>`).join("");
+      $("panelSelect").value = state.panelGroupId;
       $("panelSelect").addEventListener("change", (event) => {
-        state.panelId = Number(event.target.value);
+        state.panelGroupId = event.target.value;
         applyPreset();
       });
 
@@ -1371,7 +1388,7 @@
     }
 
     function renderControls() {
-      $("panelSelect").value = String(state.panelId);
+      $("panelSelect").value = state.panelGroupId;
       $("targetSelect").value = state.target;
 
       document.querySelectorAll("#phaseButtons button").forEach((button) => {
@@ -1577,7 +1594,7 @@
       const p = panel();
       const image = $("panelReferenceImage");
       const imagePath = PANEL_IMAGES[p.id];
-      $("panelReferenceName").textContent = p.name;
+      $("panelReferenceName").textContent = `${p.name} (ref: ${PANELS.find((item) => item.id === p.id).name})`;
       if (imagePath) {
         image.src = imagePath;
         image.alt = `${p.name} panel reference`;
@@ -1757,7 +1774,9 @@
 
     function renderBatch() {
       const patternRows = [];
-      PANELS.forEach((p) => {
+      PANEL_GROUPS.forEach((group) => {
+        const sourcePanel = PANELS.find((p) => p.id === group.panelId);
+        const p = { ...sourcePanel, name: group.name, group };
         TARGETS.forEach((target) => {
           const phaseCells = [0, 1, 2, 3].map((phase) => {
             const now = expectedFor(p, phase, target.colors);
