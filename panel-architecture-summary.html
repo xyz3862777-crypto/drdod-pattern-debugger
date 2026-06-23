@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>面板架構總表</title>
+  <title>&#38754;&#26495;&#26550;&#27083;&#32317;&#34920;</title>
   <style>
     :root {
       color-scheme: light;
@@ -12,7 +12,6 @@
       --ink: #172033;
       --muted: #697386;
       --line: #d9deea;
-      --line-strong: #9aa6bd;
       --focus: #2b64d8;
       --r: #ff6f78;
       --g: #5be768;
@@ -36,7 +35,7 @@
     header {
       position: sticky;
       top: 0;
-      z-index: 3;
+      z-index: 5;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -77,34 +76,60 @@
       font: inherit;
     }
 
-    main { padding: 18px; }
+    main {
+      padding: 18px;
+    }
 
-    .summary-grid {
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 1px solid #aeb7c8;
+      border-radius: 4px;
+    }
+
+    .panel-block {
       display: grid;
-      grid-template-columns: minmax(520px, 1.4fr) minmax(420px, 0.92fr);
-      gap: 18px;
+      grid-template-columns: minmax(500px, 0.78fr) minmax(720px, 1.22fr);
+      gap: 16px;
       align-items: start;
+      margin-bottom: 20px;
     }
 
-    .section {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 14px;
-      overflow: auto;
+    .panel-block.hidden {
+      display: none;
     }
 
-    .table-head {
+    .panel-title {
+      grid-column: 1 / -1;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
     }
 
-    h2 {
+    .panel-title h2 {
       margin: 0;
-      font-size: 15px;
+      font-size: 18px;
       line-height: 1.25;
     }
 
@@ -123,18 +148,47 @@
       white-space: nowrap;
     }
 
+    .mapping-card,
+    .pattern-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 10px;
+      overflow: auto;
+    }
+
+    .pattern-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(320px, 1fr));
+      gap: 12px;
+    }
+
+    .table-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .table-head h3 {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 16px;
+      font-size: 13px;
     }
 
     th,
     td {
       border: 1px solid var(--line);
-      height: 41px;
-      padding: 6px 8px;
+      height: 31px;
+      padding: 4px 5px;
       text-align: center;
       vertical-align: middle;
       font-weight: 500;
@@ -148,7 +202,7 @@
     .row-head {
       background: #f8fafc;
       font-weight: 700;
-      width: 72px;
+      width: 58px;
     }
 
     .phase-now {
@@ -183,81 +237,51 @@
       box-shadow: inset 0 0 0 3px var(--od), inset 0 0 0 5px rgba(255, 255, 255, 0.45);
     }
 
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 12px;
+    @media (max-width: 1320px) {
+      .panel-block { grid-template-columns: 1fr; }
     }
 
-    .legend-item {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-    }
+    @media (max-width: 820px) {
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
 
-    .swatch {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 1px solid #aeb7c8;
-      border-radius: 4px;
-    }
+      .toolbar {
+        justify-content: flex-start;
+      }
 
-    @media (max-width: 1180px) {
-      header { align-items: flex-start; flex-direction: column; }
-      .toolbar { justify-content: flex-start; }
-      .summary-grid { grid-template-columns: 1fr; }
-    }
+      main {
+        padding: 12px;
+      }
 
-    @media (max-width: 680px) {
-      main { padding: 12px; }
-      .section { padding: 10px; }
-      table { font-size: 13px; }
-      th, td { height: 34px; padding: 5px 4px; }
+      .pattern-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>面板架構總表</h1>
+    <h1>&#38754;&#26495;&#26550;&#27083;&#32317;&#34920;</h1>
     <div class="toolbar">
-      <label for="panelSelect">Panel</label>
-      <select id="panelSelect"></select>
-      <label for="targetSelect">Pattern</label>
-      <select id="targetSelect"></select>
+      <label for="panelFilter">Panel</label>
+      <select id="panelFilter"></select>
       <label for="phaseSelect">Line</label>
       <select id="phaseSelect"></select>
     </div>
   </header>
 
   <main>
-    <div class="summary-grid">
-      <section class="section">
-        <div class="table-head">
-          <h2>Panel Mapping</h2>
-        </div>
-        <div id="mappingTable"></div>
-        <div class="legend">
-          <span class="legend-item"><span class="swatch pix-r"></span>R</span>
-          <span class="legend-item"><span class="swatch pix-g"></span>G</span>
-          <span class="legend-item"><span class="swatch pix-b"></span>B</span>
-          <span class="legend-item"><span class="swatch pix-y"></span>Y=R+G</span>
-          <span class="legend-item"><span class="swatch pix-c"></span>C=G+B</span>
-          <span class="legend-item"><span class="swatch pix-m"></span>M=R+B</span>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="table-head">
-          <h2>OD Subpix Position</h2>
-          <span class="badge" id="odBadge"></span>
-        </div>
-        <div id="odTable"></div>
-      </section>
+    <div class="legend">
+      <span class="legend-item"><span class="swatch pix-r"></span>R</span>
+      <span class="legend-item"><span class="swatch pix-g"></span>G</span>
+      <span class="legend-item"><span class="swatch pix-b"></span>B</span>
+      <span class="legend-item"><span class="swatch pix-y"></span>Y=R+G</span>
+      <span class="legend-item"><span class="swatch pix-c"></span>C=G+B</span>
+      <span class="legend-item"><span class="swatch pix-m"></span>M=R+B</span>
     </div>
+    <div id="summaryRoot"></div>
   </main>
 
   <script>
@@ -341,8 +365,8 @@
       { id: "G", label: "G", colors: ["G"] },
       { id: "B", label: "B", colors: ["B"] },
       { id: "Y", label: "Y (R+G)", colors: ["R", "G"] },
-      { id: "C", label: "C (G+B)", colors: ["G", "B"] },
-      { id: "M", label: "M (R+B)", colors: ["R", "B"] }
+      { id: "M", label: "M (R+B)", colors: ["R", "B"] },
+      { id: "C", label: "C (G+B)", colors: ["G", "B"] }
     ];
 
     const DISPLAY_SOURCE_MAP = {
@@ -360,27 +384,19 @@
       12: [["R1", "R2", "B2", "R3", "R4", "B4"], ["G1", "B1", "G2", "G3", "B3", "G4"], ["B0", "R1", "R2", "B2", "R3", "R4"], ["G0", "G1", "B1", "G2", "G3", "B3"]]
     };
 
-    const state = { panelId: 3, target: "C", phase: 1 };
+    const state = {
+      panelFilter: "ALL",
+      phase: 1
+    };
+
     const $ = (id) => document.getElementById(id);
 
     function classForColor(color) {
       return "pix-" + String(color || "").charAt(0).toLowerCase();
     }
 
-    function phaseData(panelInfo, phase) {
-      return panelInfo.phases[phase];
-    }
-
     function colorAt(phaseInfo, opIndex) {
       return ["R", "G", "B"].find((color) => phaseInfo[color][opIndex] === "1") || "M";
-    }
-
-    function bitsToOps(bits) {
-      return bits.split("").map((value) => Number(value));
-    }
-
-    function orOps(a, b) {
-      return a.map((value, index) => value || b[index] ? 1 : 0);
     }
 
     function notOps(a) {
@@ -391,6 +407,11 @@
       return a.map((value, index) => value && b[index] ? 1 : 0);
     }
 
+    function sourceLabelAt(panelInfo, rowIndex, opIndex) {
+      const sourceMap = DISPLAY_SOURCE_MAP[panelInfo.id];
+      return sourceMap ? sourceMap[rowIndex][opIndex] : colorAt(panelInfo.phases[rowIndex], opIndex);
+    }
+
     function expectedFor(panelInfo, phase, colors) {
       return [0, 1, 2, 3, 4, 5].map((opIndex) => {
         const label = sourceLabelAt(panelInfo, phase, opIndex);
@@ -398,33 +419,17 @@
       });
     }
 
-    function panel() {
-      return PANELS.find((item) => item.id === state.panelId);
-    }
-
-    function target() {
-      return TARGETS.find((item) => item.id === state.target);
-    }
-
-    function sourceLabelAt(panelInfo, rowIndex, opIndex) {
-      const sourceMap = DISPLAY_SOURCE_MAP[panelInfo.id];
-      return sourceMap ? sourceMap[rowIndex][opIndex] : colorAt(panelInfo.phases[rowIndex], opIndex);
-    }
-
     function renderControls() {
-      $("panelSelect").innerHTML = PANELS.map((item) => `<option value="${item.id}">${item.name}</option>`).join("");
-      $("targetSelect").innerHTML = TARGETS.map((item) => `<option value="${item.id}">${item.label}</option>`).join("");
+      $("panelFilter").innerHTML = [
+        `<option value="ALL">ALL PANEL TYPE</option>`,
+        ...PANELS.map((item) => `<option value="${item.id}">${item.name}</option>`)
+      ].join("");
       $("phaseSelect").innerHTML = [0, 1, 2, 3].map((phase) => `<option value="${phase}">LINE${phase + 1}</option>`).join("");
-      $("panelSelect").value = String(state.panelId);
-      $("targetSelect").value = state.target;
+      $("panelFilter").value = state.panelFilter;
       $("phaseSelect").value = String(state.phase);
-      $("panelSelect").addEventListener("change", (event) => {
-        state.panelId = Number(event.target.value);
-        render();
-      });
-      $("targetSelect").addEventListener("change", (event) => {
-        state.target = event.target.value;
-        render();
+      $("panelFilter").addEventListener("change", (event) => {
+        state.panelFilter = event.target.value;
+        renderVisibility();
       });
       $("phaseSelect").addEventListener("change", (event) => {
         state.phase = Number(event.target.value);
@@ -432,11 +437,10 @@
       });
     }
 
-    function renderMapping() {
-      const p = panel();
-      const rows = p.phases.map((phase, rowIndex) => {
+    function renderMapping(panelInfo) {
+      const rows = panelInfo.phases.map((phase, rowIndex) => {
         const cells = [0, 1, 2, 3, 4, 5].map((opIndex) => {
-          const label = sourceLabelAt(p, rowIndex, opIndex);
+          const label = sourceLabelAt(panelInfo, rowIndex, opIndex);
           const color = label[0] || colorAt(phase, opIndex);
           return `<td class="pix-cell ${classForColor(color)}">${label}</td>`;
         }).join("");
@@ -444,29 +448,26 @@
         return `<tr><td class="row-head ${cls}">G${rowIndex + 1}</td>${cells}</tr>`;
       }).join("");
 
-      $("mappingTable").innerHTML = `
+      return `
         <table>
           <thead>
-            <tr><th>${p.name}</th><th>OP1</th><th>OP2</th><th>OP3</th><th>OP4</th><th>OP5</th><th>OP6</th></tr>
+            <tr><th>${panelInfo.name}</th><th>OP1</th><th>OP2</th><th>OP3</th><th>OP4</th><th>OP5</th><th>OP6</th></tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
       `;
     }
 
-    function renderOdTable() {
-      const p = panel();
-      const t = target();
-      $("odBadge").textContent = "DO OD";
+    function renderOdTable(panelInfo, targetInfo) {
       const rows = [0, 1, 2, 3, 4, 5].map((opIndex) => {
-        const cells = p.phases.map((phase, rowIndex) => {
-          const now = expectedFor(p, rowIndex, t.colors);
-          const prev = expectedFor(p, (rowIndex + 3) % 4, t.colors);
+        const cells = panelInfo.phases.map((phase, rowIndex) => {
+          const now = expectedFor(panelInfo, rowIndex, targetInfo.colors);
+          const prev = expectedFor(panelInfo, (rowIndex + 3) % 4, targetInfo.colors);
           const rising = andOps(now, notOps(prev));
           if (!now[opIndex]) {
             return `<td class="od-zero">0</td>`;
           }
-          const label = sourceLabelAt(p, rowIndex, opIndex);
+          const label = sourceLabelAt(panelInfo, rowIndex, opIndex);
           const color = label[0] || colorAt(phase, opIndex);
           const frameClass = rising[opIndex] ? " od-frame" : "";
           return `<td class="pix-cell od-hit${frameClass} ${classForColor(color)}">${label}</td>`;
@@ -474,11 +475,11 @@
         return `<tr><td class="row-head">D${opIndex}</td>${cells}</tr>`;
       }).join("");
 
-      $("odTable").innerHTML = `
+      return `
         <table>
           <thead>
             <tr>
-              <th>${t.id}</th>
+              <th>${targetInfo.id}</th>
               ${[0, 1, 2, 3].map((phase) => `<th class="${phase === state.phase ? "phase-now" : ""}">LINE${phase + 1}</th>`).join("")}
             </tr>
           </thead>
@@ -487,12 +488,44 @@
       `;
     }
 
+    function renderPanelBlock(panelInfo) {
+      const patterns = TARGETS.map((targetInfo) => `
+        <section class="pattern-card">
+          <div class="table-head">
+            <h3>${targetInfo.label}</h3>
+            <span class="badge">DO OD</span>
+          </div>
+          ${renderOdTable(panelInfo, targetInfo)}
+        </section>
+      `).join("");
+
+      return `
+        <article class="panel-block" data-panel-id="${panelInfo.id}">
+          <div class="panel-title">
+            <h2>${panelInfo.name}</h2>
+            <span class="badge">R / G / B / Y / M / C</span>
+          </div>
+          <section class="mapping-card">
+            <div class="table-head"><h3>Panel Mapping</h3></div>
+            ${renderMapping(panelInfo)}
+          </section>
+          <div class="pattern-grid">${patterns}</div>
+        </article>
+      `;
+    }
+
+    function renderVisibility() {
+      document.querySelectorAll(".panel-block").forEach((block) => {
+        const visible = state.panelFilter === "ALL" || block.dataset.panelId === state.panelFilter;
+        block.classList.toggle("hidden", !visible);
+      });
+    }
+
     function render() {
-      $("panelSelect").value = String(state.panelId);
-      $("targetSelect").value = state.target;
+      $("panelFilter").value = state.panelFilter;
       $("phaseSelect").value = String(state.phase);
-      renderMapping();
-      renderOdTable();
+      $("summaryRoot").innerHTML = PANELS.map(renderPanelBlock).join("");
+      renderVisibility();
     }
 
     renderControls();
