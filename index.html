@@ -185,6 +185,59 @@
       align-items: start;
     }
 
+    .mapping-section {
+      grid-column: 1 / -1;
+    }
+
+    .wide-section {
+      grid-column: 1 / -1;
+    }
+
+    .mapping-grid {
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) minmax(360px, 0.88fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .table-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 24px;
+      margin-bottom: 8px;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .table-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 22px;
+      padding: 2px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .table-badge.ok {
+      border-color: #9bd9b8;
+      background: #e8f8ef;
+      color: #0b5d3d;
+    }
+
+    .table-badge.warn {
+      border-color: #e2c16a;
+      background: #fff4c9;
+      color: #6d4a00;
+    }
+
     .section {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -262,6 +315,24 @@
     .cell-pix.dplc-copy {
       box-shadow: inset 0 0 0 2px #fff7a8;
       font-style: italic;
+    }
+
+    .od-cell {
+      background: #f6f8fc;
+      color: #7b8495;
+      font-weight: 700;
+    }
+
+    .od-cell.hit {
+      color: #111827;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 2px #d8a824;
+    }
+
+    .od-cell.disabled {
+      background: #eef1f6;
+      color: #8a94a6;
+      font-weight: 800;
     }
 
     .pix-r { background: var(--r); }
@@ -660,6 +731,7 @@
       .app { grid-template-columns: 1fr; }
       aside { border-right: 0; border-bottom: 1px solid var(--line); }
       .layout { grid-template-columns: 1fr; }
+      .mapping-grid { grid-template-columns: 1fr; }
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .charging-body { grid-template-columns: 1fr; }
       .panel-reference-frame { height: 300px; }
@@ -765,9 +837,24 @@
       </section>
 
       <div class="layout">
-        <section class="section">
+        <section class="section mapping-section">
           <h2>Panel Mapping</h2>
-          <div id="mappingTable"></div>
+          <div class="mapping-grid">
+            <div>
+              <div class="table-title">
+                <span>Gate / OP Source</span>
+                <span class="table-badge" id="mappingBadge"></span>
+              </div>
+              <div id="mappingTable"></div>
+            </div>
+            <div>
+              <div class="table-title">
+                <span>OD Subpix Position</span>
+                <span class="table-badge" id="odPositionBadge"></span>
+              </div>
+              <div id="odPositionTable"></div>
+            </div>
+          </div>
           <div class="legend">
             <span class="legend-item"><span class="swatch pix-r"></span>R</span>
             <span class="legend-item"><span class="swatch pix-g"></span>G</span>
@@ -778,7 +865,7 @@
           </div>
         </section>
 
-        <section class="section">
+        <section class="section wide-section">
           <h2>Detect Result</h2>
           <div id="detailTable"></div>
         </section>
@@ -1226,6 +1313,7 @@
       renderCharging();
       renderPanelReference();
       renderMapping();
+      renderOdPosition();
       renderDetail();
       renderBatch();
     }
@@ -1308,7 +1396,7 @@
       const sourceMap = DISPLAY_SOURCE_MAP[p.id];
       const rows = p.phases.map((phase, rowIndex) => {
         const cells = [0, 1, 2, 3, 4, 5].map((opIndex) => {
-          const label = sourceMap ? sourceMap[rowIndex][opIndex] : colorAt(phase, opIndex);
+          const label = sourceLabelAt(p, rowIndex, opIndex);
           const mapped = dplcMappingLabel(label);
           const color = label[0] || colorAt(phase, opIndex);
           const copyClass = mapped.isCopy ? " dplc-copy" : "";
@@ -1326,6 +1414,47 @@
           <tbody>${rows}</tbody>
         </table>
       `;
+      $("mappingBadge").textContent = state.dplcMode ? "DPLC source copy" : "Excel source";
+    }
+
+    function renderOdPosition() {
+      const c = calc();
+      const badge = $("odPositionBadge");
+      badge.className = `table-badge ${!c.drdodAllowed ? "warn" : (c.exact ? "ok" : "warn")}`;
+      badge.textContent = !c.drdodAllowed ? "DRDOD OFF" : (c.exact ? "DO OD" : "Input mismatch");
+
+      const rows = c.p.phases.map((phase, rowIndex) => {
+        const now = expectedFor(c.p, rowIndex, c.target.colors);
+        const prev = expectedFor(c.p, (rowIndex + 3) % 4, c.target.colors);
+        const rising = andOps(now, notOps(prev));
+        const cells = [0, 1, 2, 3, 4, 5].map((opIndex) => {
+          if (state.dplcMode) {
+            return `<td class="od-cell disabled">OFF</td>`;
+          }
+          if (!rising[opIndex]) {
+            return `<td class="od-cell">0</td>`;
+          }
+          const label = sourceLabelAt(c.p, rowIndex, opIndex);
+          const color = label[0] || colorAt(phase, opIndex);
+          return `<td class="od-cell hit ${classForColor(color)}">${label}</td>`;
+        }).join("");
+        const cls = rowIndex === state.phase ? "phase-now" : "";
+        return `<tr class="${cls}"><td class="row-head">G${rowIndex + 1}</td>${cells}</tr>`;
+      }).join("");
+
+      $("odPositionTable").innerHTML = `
+        <table>
+          <thead>
+            <tr><th>${c.target.id}</th><th>Y1/OP1</th><th>Y2/OP2</th><th>Y3/OP3</th><th>Y4/OP4</th><th>Y5/OP5</th><th>Y6/OP6</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function sourceLabelAt(panelInfo, rowIndex, opIndex) {
+      const sourceMap = DISPLAY_SOURCE_MAP[panelInfo.id];
+      return sourceMap ? sourceMap[rowIndex][opIndex] : colorAt(panelInfo.phases[rowIndex], opIndex);
     }
 
     function dplcMappingLabel(label) {
