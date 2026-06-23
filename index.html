@@ -200,7 +200,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
+      grid-template-columns: minmax(0, 1fr);
       gap: 18px;
       align-items: start;
     }
@@ -215,16 +215,36 @@
 
     .mapping-grid {
       display: grid;
-      grid-template-columns: minmax(420px, 1fr) minmax(360px, 0.88fr);
+      grid-template-columns: minmax(240px, 0.55fr) minmax(260px, 0.45fr) minmax(285px, 0.5fr);
       gap: 16px;
-      align-items: start;
+      align-items: stretch;
     }
 
-    .mapping-analysis-grid {
-      display: grid;
-      grid-template-columns: minmax(320px, 1fr) minmax(300px, 0.95fr);
-      gap: 16px;
-      align-items: start;
+    .mapping-card {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mapping-card > div:last-child {
+      flex: 1;
+    }
+
+    .mapping-card table {
+      height: 100%;
+    }
+
+    .mapping-source table {
+      font-size: 12px;
+    }
+
+    .mapping-source th,
+    .mapping-source td {
+      padding: 7px 5px;
+    }
+
+    .mapping-source .row-head {
+      width: 44px;
     }
 
     .table-title {
@@ -356,7 +376,7 @@
     }
 
     .od-cell.hit.od-data {
-      box-shadow: inset 0 0 0 3px #d8a824, inset 0 0 0 5px rgba(255, 255, 255, 0.45);
+      box-shadow: inset 0 0 0 3px #111827, inset 0 0 0 5px rgba(255, 255, 255, 0.55);
     }
 
     .od-cell.disabled {
@@ -382,6 +402,12 @@
     .phase-col-now {
       outline: 2px solid #2b64d8;
       outline-offset: -2px;
+    }
+
+    .batch-active {
+      outline: 3px solid #111827;
+      outline-offset: -3px;
+      background: #fffdf3;
     }
 
     .bit {
@@ -880,30 +906,26 @@
         <section class="section mapping-section">
           <h2>Panel Mapping</h2>
           <div class="mapping-grid">
-            <div>
+            <div class="mapping-card mapping-source">
               <div class="table-title">
                 <span>Gate / OP Source</span>
                 <span class="table-badge" id="mappingBadge"></span>
               </div>
               <div id="mappingTable"></div>
             </div>
-            <div>
-              <div class="mapping-analysis-grid">
-                <div>
-                  <div class="table-title">
-                    <span>OD Subpix Position</span>
-                    <span class="table-badge" id="odPositionBadge"></span>
-                  </div>
-                  <div id="odPositionTable"></div>
-                </div>
-                <div>
-                  <div class="table-title">
-                    <span>Pattern Detect Result</span>
-                    <span class="table-badge" id="patternDetectBadge"></span>
-                  </div>
-                  <div id="patternDetectTable"></div>
-                </div>
+            <div class="mapping-card">
+              <div class="table-title">
+                <span>OD Subpix Position</span>
+                <span class="table-badge" id="odPositionBadge"></span>
               </div>
+              <div id="odPositionTable"></div>
+            </div>
+            <div class="mapping-card">
+              <div class="table-title">
+                <span>Pattern Detect Result</span>
+                <span class="table-badge" id="patternDetectBadge"></span>
+              </div>
+              <div id="patternDetectTable"></div>
             </div>
           </div>
           <div class="legend">
@@ -1845,7 +1867,8 @@
             const masks = detectMasks(p, phase, target.id);
             const aliases = aliasPatterns(p, phase, masks.patternMask);
             const aliasText = aliases.length > 1 ? `alias ${aliases.join("/")}` : "unique";
-            return `<td><span class="mono">${opsToBits(masks.patternMask)}</span><br><span class="hint">weight ${countOps(masks.weightMask)}, ${aliasText}</span></td>`;
+            const activeClass = group.id === state.panelGroupId && target.id === state.target && phase === state.phase ? " class=\"batch-active\"" : "";
+            return `<td${activeClass}><span class="mono">${opsToBits(masks.patternMask)}</span><br><span class="hint">weight ${countOps(masks.weightMask)}, ${aliasText}</span></td>`;
           }).join("");
           patternRows.push(`<tr><td class="row-head">${p.name}</td><td>${target.id}</td>${phaseCells}</tr>`);
         });
