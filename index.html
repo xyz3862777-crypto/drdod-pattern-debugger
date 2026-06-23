@@ -200,6 +200,13 @@
       align-items: start;
     }
 
+    .mapping-analysis-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(300px, 0.95fr);
+      gap: 16px;
+      align-items: start;
+    }
+
     .table-title {
       display: flex;
       align-items: center;
@@ -348,6 +355,11 @@
     .pix-k { background: var(--k); }
 
     .phase-now .row-head {
+      outline: 2px solid #2b64d8;
+      outline-offset: -2px;
+    }
+
+    .phase-col-now {
       outline: 2px solid #2b64d8;
       outline-offset: -2px;
     }
@@ -734,6 +746,7 @@
       aside { border-right: 0; border-bottom: 1px solid var(--line); }
       .layout { grid-template-columns: 1fr; }
       .mapping-grid { grid-template-columns: 1fr; }
+      .mapping-analysis-grid { grid-template-columns: 1fr; }
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .charging-body { grid-template-columns: 1fr; }
       .panel-reference-frame { height: 300px; }
@@ -850,11 +863,22 @@
               <div id="mappingTable"></div>
             </div>
             <div>
-              <div class="table-title">
-                <span>OD Subpix Position</span>
-                <span class="table-badge" id="odPositionBadge"></span>
+              <div class="mapping-analysis-grid">
+                <div>
+                  <div class="table-title">
+                    <span>OD Subpix Position</span>
+                    <span class="table-badge" id="odPositionBadge"></span>
+                  </div>
+                  <div id="odPositionTable"></div>
+                </div>
+                <div>
+                  <div class="table-title">
+                    <span>Pattern Detect Result</span>
+                    <span class="table-badge" id="patternDetectBadge"></span>
+                  </div>
+                  <div id="patternDetectTable"></div>
+                </div>
               </div>
-              <div id="odPositionTable"></div>
             </div>
           </div>
           <div class="legend">
@@ -1316,6 +1340,7 @@
       renderPanelReference();
       renderMapping();
       renderOdPosition();
+      renderPatternDetectResult();
       renderDetail();
       renderBatch();
     }
@@ -1425,11 +1450,11 @@
       badge.className = `table-badge ${!c.drdodAllowed ? "warn" : (c.exact ? "ok" : "warn")}`;
       badge.textContent = !c.drdodAllowed ? "DRDOD OFF" : (c.exact ? "DO OD" : "Input mismatch");
 
-      const rows = c.p.phases.map((phase, rowIndex) => {
-        const now = expectedFor(c.p, rowIndex, c.target.colors);
-        const prev = expectedFor(c.p, (rowIndex + 3) % 4, c.target.colors);
-        const rising = andOps(now, notOps(prev));
-        const cells = [0, 1, 2, 3, 4, 5].map((opIndex) => {
+      const rows = [0, 1, 2, 3, 4, 5].map((opIndex) => {
+        const cells = c.p.phases.map((phase, rowIndex) => {
+          const now = expectedFor(c.p, rowIndex, c.target.colors);
+          const prev = expectedFor(c.p, (rowIndex + 3) % 4, c.target.colors);
+          const rising = andOps(now, notOps(prev));
           if (state.dplcMode) {
             return `<td class="od-cell disabled">OFF</td>`;
           }
@@ -1441,14 +1466,53 @@
           const odClass = rising[opIndex] ? " od-data" : "";
           return `<td class="od-cell hit${odClass} ${classForColor(color)}">${label}</td>`;
         }).join("");
-        const cls = rowIndex === state.phase ? "phase-now" : "";
-        return `<tr class="${cls}"><td class="row-head">LINE${rowIndex + 1}</td>${cells}</tr>`;
+        return `<tr><td class="row-head">D${opIndex}</td>${cells}</tr>`;
       }).join("");
 
       $("odPositionTable").innerHTML = `
         <table>
           <thead>
-            <tr><th>${c.target.id}</th><th>D0</th><th>D1</th><th>D2</th><th>D3</th><th>D4</th><th>D5</th></tr>
+            <tr>
+              <th>${c.target.id}</th>
+              ${[0, 1, 2, 3].map((phase) => `<th class="${phase === state.phase ? "phase-col-now" : ""}">LINE${phase + 1}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderPatternDetectResult() {
+      const c = calc();
+      const badge = $("patternDetectBadge");
+      badge.className = `table-badge ${!c.drdodAllowed ? "warn" : (c.exact ? "ok" : "warn")}`;
+      badge.textContent = !c.drdodAllowed ? "DRDOD OFF" : (c.exact ? "MATCH" : "MISMATCH");
+
+      const rows = [0, 1, 2, 3, 4, 5].map((opIndex) => {
+        const matchBit = c.input[opIndex] === c.now[opIndex] ? 1 : 0;
+        return `
+          <tr>
+            <td class="row-head">D${opIndex}</td>
+            <td>${bit(c.now[opIndex])}</td>
+            <td>${bit(c.input[opIndex], matchBit ? "" : "ng")}</td>
+            <td>${bit(matchBit, matchBit ? "" : "ng")}</td>
+            <td>${bit(c.rising[opIndex], c.rising[opIndex] ? "rise" : "")}</td>
+            <td>${c.finalOd[opIndex] ? `<span class="decision pass">OD</span>` : `<span class="decision fail">OFF</span>`}</td>
+          </tr>
+        `;
+      }).join("");
+
+      $("patternDetectTable").innerHTML = `
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>DATA</th>
+              <th>Expected</th>
+              <th>Input</th>
+              <th>Match</th>
+              <th>0-&gt;1</th>
+              <th>Result</th>
+            </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
