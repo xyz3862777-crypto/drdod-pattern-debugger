@@ -1104,9 +1104,34 @@
     };
 
     const PANEL_REFERENCE_GALLERY = {
+      HKC1_HKC7: [
+        "assets/panels/HKC1.png",
+        "assets/panels/HKC7.png"
+      ],
+      HKC2: [
+        "assets/panels/HKC2.png"
+      ],
       HKC3_CSOT1: [
         "assets/panels/HKC3.png",
+        "assets/panels/CSOT1.png",
         "assets/panels/HKC3_charge_ref.png"
+      ],
+      HKC4_HKC6_TIANMA1: [
+        "assets/panels/HKC4.png",
+        "assets/panels/HKC6.png",
+        "assets/panels/TIANMA1.png"
+      ],
+      HKC5: [
+        "assets/panels/HKC5.png"
+      ],
+      HKC8: [
+        "assets/panels/HKC8.png"
+      ],
+      BOE1: [
+        "assets/panels/BOE1.png"
+      ],
+      BOE2: [
+        "assets/panels/BOE2.png"
       ]
     };
 
@@ -1782,7 +1807,9 @@
       const galleryPaths = PANEL_REFERENCE_GALLERY[p.group.id];
       const imagePath = galleryPaths?.[0] || PANEL_IMAGES[p.id];
       const extraPaths = galleryPaths ? galleryPaths.slice(1) : [];
-      $("panelReferenceName").textContent = `${p.name} (ref: ${PANELS.find((item) => item.id === p.id).name})`;
+      $("panelReferenceName").textContent = galleryPaths && galleryPaths.length > 1
+        ? `${p.name} (${galleryPaths.length} refs)`
+        : `${p.name} (ref: ${PANELS.find((item) => item.id === p.id).name})`;
       if (imagePath) {
         image.src = imagePath;
         image.alt = `${p.name} panel reference`;
