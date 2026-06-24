@@ -636,7 +636,7 @@
 
     .charging-body {
       display: grid;
-      grid-template-columns: minmax(560px, 1fr) minmax(280px, 0.46fr);
+      grid-template-columns: minmax(500px, 0.92fr) minmax(340px, 0.62fr);
       gap: 14px;
       align-items: stretch;
     }
@@ -787,6 +787,12 @@
       font-weight: 700;
     }
 
+    .panel-reference-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
     .panel-reference-frame {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -806,6 +812,15 @@
       margin: 0 auto;
     }
 
+    .panel-reference-frame.secondary {
+      display: none;
+      background: #f8fafc;
+    }
+
+    .panel-reference-frame.secondary.show {
+      display: grid;
+    }
+
     @media (max-width: 1120px) {
       .app { grid-template-columns: 1fr; }
       aside { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -815,6 +830,7 @@
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .charging-body { grid-template-columns: 1fr; }
       .panel-reference-frame { height: 300px; }
+      .panel-reference-gallery { grid-template-columns: 1fr; }
       .charging-note { grid-template-columns: 1fr; }
     }
 
@@ -908,8 +924,13 @@
                 <span>Panel Reference</span>
                 <span id="panelReferenceName"></span>
               </div>
-              <div class="panel-reference-frame">
-                <img id="panelReferenceImage" alt="Panel reference">
+              <div class="panel-reference-gallery">
+                <div class="panel-reference-frame">
+                  <img id="panelReferenceImage" alt="Panel reference">
+                </div>
+                <div class="panel-reference-frame secondary" id="panelReferenceSecondaryFrame">
+                  <img id="panelReferenceSecondaryImage" alt="Panel charge reference">
+                </div>
               </div>
             </div>
           </div>
@@ -1076,6 +1097,10 @@
       10: "assets/panels/BOE1.png",
       11: "assets/panels/BOE2.png",
       12: "assets/panels/TIANMA1.png"
+    };
+
+    const PANEL_REFERENCE_EXTRA = {
+      HKC3_CSOT1: "assets/panels/HKC3_charge_ref.png"
     };
 
     const PANEL_GROUPS = [
@@ -1743,7 +1768,10 @@
     function renderPanelReference() {
       const p = panel();
       const image = $("panelReferenceImage");
+      const extraImage = $("panelReferenceSecondaryImage");
+      const extraFrame = $("panelReferenceSecondaryFrame");
       const imagePath = PANEL_IMAGES[p.id];
+      const extraPath = PANEL_REFERENCE_EXTRA[p.group.id];
       $("panelReferenceName").textContent = `${p.name} (ref: ${PANELS.find((item) => item.id === p.id).name})`;
       if (imagePath) {
         image.src = imagePath;
@@ -1753,6 +1781,18 @@
         image.removeAttribute("src");
         image.alt = "No panel reference available";
         image.style.display = "none";
+      }
+
+      if (extraPath) {
+        extraImage.src = extraPath;
+        extraImage.alt = `${p.name} charge reference`;
+        extraImage.style.display = "block";
+        extraFrame.classList.add("show");
+      } else {
+        extraImage.removeAttribute("src");
+        extraImage.alt = "No extra charge reference available";
+        extraImage.style.display = "none";
+        extraFrame.classList.remove("show");
       }
     }
 
