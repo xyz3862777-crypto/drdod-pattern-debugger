@@ -636,7 +636,7 @@
 
     .charging-body {
       display: grid;
-      grid-template-columns: minmax(500px, 0.92fr) minmax(340px, 0.62fr);
+      grid-template-columns: minmax(420px, 0.82fr) minmax(360px, 0.68fr);
       gap: 14px;
       align-items: stretch;
     }
@@ -821,6 +821,10 @@
       display: grid;
     }
 
+    .panel-reference.is-multi .panel-reference-gallery {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
     @media (max-width: 1120px) {
       .app { grid-template-columns: 1fr; }
       aside { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -924,8 +928,8 @@
                 <span>Panel Reference</span>
                 <span id="panelReferenceName"></span>
               </div>
-              <div class="panel-reference-gallery">
-                <div class="panel-reference-frame">
+              <div class="panel-reference-gallery" id="panelReferenceGallery">
+                <div class="panel-reference-frame primary">
                   <img id="panelReferenceImage" alt="Panel reference">
                 </div>
                 <div class="panel-reference-frame secondary" id="panelReferenceSecondaryFrame">
@@ -1099,8 +1103,11 @@
       12: "assets/panels/TIANMA1.png"
     };
 
-    const PANEL_REFERENCE_EXTRA = {
-      HKC3_CSOT1: "assets/panels/HKC3_charge_ref.png"
+    const PANEL_REFERENCE_GALLERY = {
+      HKC3_CSOT1: [
+        "assets/panels/HKC3.png",
+        "assets/panels/HKC3_charge_ref.png"
+      ]
     };
 
     const PANEL_GROUPS = [
@@ -1767,11 +1774,14 @@
 
     function renderPanelReference() {
       const p = panel();
+      const wrapper = $("panelReferenceGallery").closest(".panel-reference");
+      const gallery = $("panelReferenceGallery");
       const image = $("panelReferenceImage");
       const extraImage = $("panelReferenceSecondaryImage");
       const extraFrame = $("panelReferenceSecondaryFrame");
-      const imagePath = PANEL_IMAGES[p.id];
-      const extraPath = PANEL_REFERENCE_EXTRA[p.group.id];
+      const galleryPaths = PANEL_REFERENCE_GALLERY[p.group.id];
+      const imagePath = galleryPaths?.[0] || PANEL_IMAGES[p.id];
+      const extraPaths = galleryPaths ? galleryPaths.slice(1) : [];
       $("panelReferenceName").textContent = `${p.name} (ref: ${PANELS.find((item) => item.id === p.id).name})`;
       if (imagePath) {
         image.src = imagePath;
@@ -1783,17 +1793,30 @@
         image.style.display = "none";
       }
 
-      if (extraPath) {
-        extraImage.src = extraPath;
-        extraImage.alt = `${p.name} charge reference`;
+      if (extraPaths.length > 0) {
+        extraImage.src = extraPaths[0];
+        extraImage.alt = `${p.name} extra reference 1`;
         extraImage.style.display = "block";
         extraFrame.classList.add("show");
+        wrapper.classList.add("is-multi");
       } else {
         extraImage.removeAttribute("src");
         extraImage.alt = "No extra charge reference available";
         extraImage.style.display = "none";
         extraFrame.classList.remove("show");
+        wrapper.classList.remove("is-multi");
       }
+
+      gallery.querySelectorAll(".panel-reference-frame.dynamic").forEach((node) => node.remove());
+      extraPaths.slice(1).forEach((path, index) => {
+        const frame = document.createElement("div");
+        frame.className = "panel-reference-frame secondary show dynamic";
+        const img = document.createElement("img");
+        img.src = path;
+        img.alt = `${p.name} extra reference ${index + 2}`;
+        frame.appendChild(img);
+        gallery.appendChild(frame);
+      });
     }
 
     function renderChargingPanel(withOd, rowLabels) {
