@@ -304,6 +304,32 @@
       color: #6d4a00;
     }
 
+    .table-badge.summary-badge {
+      gap: 8px;
+      justify-content: flex-start;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .table-badge.summary-badge .kv {
+      color: inherit;
+    }
+
+    .table-badge.summary-badge .line-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .table-badge.summary-badge .line-state.ok {
+      color: #0b5d3d;
+    }
+
+    .table-badge.summary-badge .line-state.bad {
+      color: #8d1225;
+    }
+
     .section {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -1697,8 +1723,16 @@
     function renderOdPosition() {
       const c = calc();
       const badge = $("odPositionBadge");
-      badge.className = `table-badge ${!c.drdodAllowed ? "warn" : (c.exact ? "ok" : "warn")}`;
-      badge.textContent = !c.drdodAllowed ? "DRDOD OFF" : (c.exact ? "DO OD" : "Input mismatch");
+      const lineStates = lineMatchSummary(c.p, c.target.id);
+      const badgeStateClass = !c.drdodAllowed ? "warn" : (lineStates.every((state) => state.match) ? "ok" : "warn");
+      badge.className = `table-badge summary-badge ${badgeStateClass}`;
+      badge.innerHTML = [
+        `<span class="kv">Target: ${c.target.id}</span>`,
+        `<span class="kv">|</span>`,
+        `<span class="kv">Input: ${state.preset === "FOLLOW" ? c.target.id : state.preset}</span>`,
+        `<span class="kv">|</span>`,
+        lineStates.map((item) => `<span class="line-state ${item.match ? "ok" : "bad"}">${item.label} ${item.match ? "○" : "×"}</span>`).join(" ")
+      ].join(" ");
 
       const rows = [0, 1, 2, 3, 4, 5].map((opIndex) => {
         const cells = c.p.phases.map((phase, rowIndex) => {
@@ -1729,6 +1763,17 @@
           <tbody>${rows}</tbody>
         </table>
       `;
+    }
+
+    function lineMatchSummary(panelInfo, targetId) {
+      return [0, 1, 2, 3].map((phase) => {
+        const expected = detectMasks(panelInfo, phase, targetId).patternMask;
+        const input = presetOpsForPhase(panelInfo, phase);
+        return {
+          label: `L${phase + 1}`,
+          match: sameOps(input, expected)
+        };
+      });
     }
 
     function renderPatternDetectResult() {
